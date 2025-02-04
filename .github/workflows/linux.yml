@@ -17,5 +17,12 @@ jobs:
       - name: Install dependencies
         run: |
           cpanm -n --installdeps .
+          cpanm -n Devel::Cover::Report::Coveralls
       - name: Run tests
+        env:
+          HARNESS_PERL_SWITCHES: -MDevel::Cover
         run: prove -l -v t/*.t
+      - name: Coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cover -report Coveralls
