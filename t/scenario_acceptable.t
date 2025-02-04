@@ -20,7 +20,6 @@ use lib "$FindBin::Bin/lib";
 
 use Test::More;
 use CavilGiteaTest;
-use Cavil::Gitea;
 use Mojolicious::Lite;
 
 app->log->level('error');
