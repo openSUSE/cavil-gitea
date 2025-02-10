@@ -48,7 +48,8 @@ sub create_request ($self, $info) {
     package       => $info->{repo},
     rev           => $info->{checkout},
     external_link => $external_link,
-    type          => 'git'
+    type          => 'git',
+    priority      => $info->{priority}
   };
 
   my $data       = $self->_request('POST', '/packages', $form);
@@ -65,7 +66,12 @@ sub remove_request ($self, $info) {
 
 sub review_result ($self, $package) {
   my $data = $self->_request('GET', "/package/$package");
-  return {state => $data->{state}, result => $data->{result}};
+  return {state => $data->{state}, result => $data->{result}, priority => $data->{priority}};
+}
+
+sub update_package ($self, $package, $info) {
+  my $data = $self->_request('PATCH', "/package/$package", {priority => $info->{priority}});
+  return !!$data->{updated};
 }
 
 sub update_request ($self, $package, $info) {

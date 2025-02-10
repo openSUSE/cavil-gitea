@@ -42,13 +42,17 @@ del '/requests' => sub ($c) {
   $c->render(json => {removed => [1]});
 };
 
-get '/package/1' => {json => {state => 'acceptable_by_lawyer', result => 'Test accept'}};
+get '/package/1' => {json => {state => 'acceptable_by_lawyer', result => 'Test accept', priority => 5}};
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
-get '/api/v1/repos/importtest/test/pulls/1' =>
-  {json => {requested_reviewers => [{login => 'legaldb'}], head => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}}
-  };
+get '/api/v1/repos/importtest/test/pulls/1' => {
+  json => {
+    requested_reviewers => [{login => 'legaldb'}],
+    labels              => [],
+    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}
+  }
+};
 
 my @posted_results;
 post '/api/v1/repos/importtest/test/pulls/:id/reviews' => sub ($c) {

@@ -35,7 +35,7 @@ get '/requests' => {
     ]
   }
 };
-get '/package/1' => {json => {state => 'obsolete', result => 'Reviewed ok'}};
+get '/package/1' => {json => {state => 'obsolete', result => 'Reviewed ok', priority => 5}};
 
 my @updated_requests;
 post '/packages/import/1' => sub ($c) {
@@ -45,9 +45,13 @@ post '/packages/import/1' => sub ($c) {
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
-get '/api/v1/repos/importtest/test/pulls/1' =>
-  {json => {requested_reviewers => [{login => 'legaldb'}], head => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}}
-  };
+get '/api/v1/repos/importtest/test/pulls/1' => {
+  json => {
+    requested_reviewers => [{login => 'legaldb'}],
+    labels              => [],
+    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}
+  }
+};
 
 get '/api/v1/notifications' => {json => []};
 

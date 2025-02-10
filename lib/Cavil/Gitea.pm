@@ -18,13 +18,16 @@ use Mojo::Base -base, -signatures;
 
 use Cavil::Gitea::CavilClient;
 use Cavil::Gitea::GiteaClient;
+use Cavil::Gitea::Util qw(label_priority);
 use Mojo::Log;
 use Mojo::Util qw(extract_usage getopt);
 
-has apinick => 'soo';
-has cavil   => sub ($self) { Cavil::Gitea::CavilClient->new(log => $self->log) };
-has gitea   => sub ($self) { Cavil::Gitea::GiteaClient->new(log => $self->log) };
-has log     => sub { Mojo::Log->new };
+has apinick          => 'soo';
+has base_priority    => 4;
+has cavil            => sub ($self) { Cavil::Gitea::CavilClient->new(log => $self->log) };
+has gitea            => sub ($self) { Cavil::Gitea::GiteaClient->new(log => $self->log) };
+has label_priorities => sub { {high_priority => 2, critical_priority => 4} };
+has log              => sub { Mojo::Log->new };
 
 sub check_open_requests ($self) {
   my $log   = $self->log;
@@ -73,6 +76,13 @@ sub check_open_requests ($self) {
     # Review is still pending
     else {
       $log->info(qq{Review request for package $package is still pending});
+
+      my $cavil_prio = $result->{priority};
+      my $gitea_prio = label_priority($self->base_priority, $self->label_priorities, $info->{labels});
+      if ($cavil_prio != $gitea_prio) {
+        $log->info(qq{Updating review priority for package $package from $cavil_prio to $gitea_prio});
+        $cavil->update_package($package, {priority => $gitea_prio});
+      }
     }
   }
 }
@@ -98,7 +108,8 @@ sub open_reviews ($self) {
         owner    => $owner,
         repo     => $repo,
         request  => $request,
-        checkout => $checkout
+        checkout => $checkout,
+        priority => label_priority($self->base_priority, $self->label_priorities, $review->{labels})
       }
     );
 
@@ -120,12 +131,13 @@ sub peer_info ($self) {
 
 sub run ($self) {
   getopt
-    'api-nick=s'    => sub { $self->apinick($_[1]) },
-    'cavil-url=s'   => sub { $self->cavil->url($_[1]) },
-    'cavil-token=s' => sub { $self->cavil->token($_[1]) },
-    'gitea-url=s'   => sub { $self->gitea->url($_[1]) },
-    'gitea-token=s' => sub { $self->gitea->token($_[1]) },
-    'r|review'      => \my $review;
+    'api-nick=s'      => sub { $self->apinick($_[1]) },
+    'base-priority=i' => sub { $self->base_priority($_[1]) },
+    'cavil-url=s'     => sub { $self->cavil->url($_[1]) },
+    'cavil-token=s'   => sub { $self->cavil->token($_[1]) },
+    'gitea-url=s'     => sub { $self->gitea->url($_[1]) },
+    'gitea-token=s'   => sub { $self->gitea->token($_[1]) },
+    'r|review'        => \my $review;
 
   if ($review) {
     $self->peer_info;
@@ -154,6 +166,7 @@ Cavil::Gitea - Gitea legal review bot
 
   Options:
         --api-nick <nick>       API nickname, defaults to 'soo'
+        --base-priority <num>   Base priority for legal reviews, defaults to 4
         --cavil-url <url>       Cavil server URL
         --cavil-token <token>   Cavil API token
         --gitea-url <url>       Gitea server URL

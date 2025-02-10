@@ -49,8 +49,15 @@ sub get_review_requests ($self) {
       my $info = $self->pr_info($owner, $repo, $number);
       if ($info->{review_requested}) {
         $log->trace("Notification $id: review request for $owner/$repo!$number");
-        push @open,
-          {notification => $id, owner => $owner, repo => $repo, request => $number, checkout => $info->{checkout}};
+        my $open = {
+          notification => $id,
+          owner        => $owner,
+          repo         => $repo,
+          request      => $number,
+          checkout     => $info->{checkout},
+          labels       => $info->{labels}
+        };
+        push @open, $open;
       }
       else {
         $log->trace("Notification $id: review request not for us");
@@ -91,7 +98,8 @@ sub pr_info ($self, $owner, $repo, $number) {
   my $issue            = $self->get_pull_request($owner, $repo, $number);
   my $reviewers        = $issue->{requested_reviewers} // [];
   my $review_requested = !!grep { $_->{login} eq $user->{login} } @$reviewers;
-  return {checkout => $issue->{head}{sha}, review_requested => $review_requested};
+  my $labels           = [map { $_->{name} } @{$issue->{labels}}];
+  return {checkout => $issue->{head}{sha}, review_requested => $review_requested, labels => $labels};
 
 }
 

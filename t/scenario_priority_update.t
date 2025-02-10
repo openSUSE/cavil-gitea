@@ -24,32 +24,41 @@ use Mojolicious::Lite;
 
 app->log->level('error');
 
-get '/requests' => {json => {requests => []}};
+get '/requests' => {
+  json => {
+    requests => [
+      {
+        checkouts     => ['b352a491da106380cf55019f7ac025077537bca5'],
+        external_link => 'soo#importtest/test!1',
+        packages      => [1]
+      }
+    ]
+  }
+};
+
+get '/package/1' => {json => {state => 'new', result => undef, priority => 4}};
+
+my @updated_packages;
+patch '/package/1' => sub ($c) {
+  push @updated_packages, $c->req->params->to_hash;
+  $c->render(json => {updated => {}});
+};
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
-
-get '/api/v1/notifications' =>
-  {json => [{id => 13270, subject => {url => 'https://src.opensuse.org/api/v1/repos/importtest/test', type => 'Repo'}}]
-  };
 
 get '/api/v1/repos/importtest/test/pulls/1' => {
   json => {
     requested_reviewers => [{login => 'legaldb'}],
-    labels              => [],
+    labels              => [{name  => 'high_priority'}],
     head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}
   }
 };
 
-my @read_notifications;
-patch '/api/v1/notifications/threads/:id' => sub ($c) {
-  my $id = $c->param('id');
-  push @read_notifications, $c->param('id');
-  $c->render(json => {id => $id});
-};
+get '/api/v1/notifications' => {json => []};
 
 my $test = CavilGiteaTest->new(app);
 
-subtest 'Random notification' => sub {
+subtest 'Updating priority' => sub {
   subtest 'Clean run' => sub {
     my $result = $test->run('--review');
     is $result->{stdout}, '', 'no output';
@@ -57,12 +66,15 @@ subtest 'Random notification' => sub {
     like $result->{logs}, qr/\[info\] Connecting to Cavil instance.+http:\/\/127\.0\.0\.1/, 'mock Cavil instance';
     like $result->{logs}, qr/\[info\] Connecting to Gitea instance.+http:\/\/127\.0\.0\.1.+soo.+legaldb/,
       'mock Gitea instance';
-    like $result->{logs}, qr/\[trace\] Notification 13270: not a review request/, 'notification received';
+    like $result->{logs}, qr/\[info\] Found 1 open legal reviews, 1 of them with "soo" external link/,
+      'open review in Cavil';
+    like $result->{logs}, qr/\[info\] Checking status of package 1 \(importtest\/test!1\)/, 'checking Gitea status';
+    like $result->{logs}, qr/\[info\] Updating review priority for package 1 from 4 to 6/,  'updating priority';
   };
 
-  subtest 'Gitea state' => sub {
-    is $read_notifications[0], 13270, 'notification read';
-    is $read_notifications[1], undef, 'no more notifications read';
+  subtest 'Cavil state' => sub {
+    is $updated_packages[0]{priority}, 6,     'right priority';
+    is $updated_packages[1],           undef, 'no more packages';
   };
 };
 

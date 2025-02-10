@@ -16,7 +16,7 @@
 use Mojo::Base -strict;
 
 use Test::More;
-use Cavil::Gitea::Util qw(build_external_link build_git_url parse_external_link);
+use Cavil::Gitea::Util qw(build_external_link build_git_url label_priority parse_external_link);
 
 subtest 'build_external_link' => sub {
   is build_external_link({apinick => 'soo', owner => 'foo', repo => 'bar', request => '123'}), 'soo#foo/bar!123',
@@ -26,6 +26,18 @@ subtest 'build_external_link' => sub {
 subtest 'build_git_url' => sub {
   is_deeply build_git_url({api => 'https://src.opensuse.org', owner => 'foo', repo => 'bar'}),
     'https://src.opensuse.org/foo/bar.git', 'right URL';
+};
+
+subtest 'label_priority' => sub {
+  is label_priority(4, {high_priority => 2, critical_priority => 4}, []),                    4, 'right priority';
+  is label_priority(5, {high_priority => 2, critical_priority => 4}, []),                    5, 'right priority';
+  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['unknown']),           5, 'right priority';
+  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['high_priority']),     7, 'right priority';
+  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['critical_priority']), 9, 'right priority';
+  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['high_priority', 'critical_priority']), 9,
+    'right priority';
+  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['critical_priority', 'high_priority']), 9,
+    'right priority';
 };
 
 subtest 'parse_external_link' => sub {

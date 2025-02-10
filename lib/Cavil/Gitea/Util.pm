@@ -16,10 +16,11 @@
 package Cavil::Gitea::Util;
 use Mojo::Base -strict, -signatures;
 
-use Exporter qw(import);
+use Exporter   qw(import);
+use List::Util qw(max);
 use Mojo::URL;
 
-our @EXPORT_OK = qw(build_external_link build_git_url parse_external_link);
+our @EXPORT_OK = qw(build_external_link build_git_url label_priority parse_external_link);
 
 sub build_external_link ($info) {
   return "$info->{apinick}#$info->{owner}/$info->{repo}!$info->{request}";
@@ -27,6 +28,10 @@ sub build_external_link ($info) {
 
 sub build_git_url ($info) {
   return Mojo::URL->new($info->{api})->path("/$info->{owner}/$info->{repo}.git");
+}
+
+sub label_priority ($prio, $map, $labels) {
+  return $prio + (max(map { $map->{$_} // 0 } @$labels) // 0);
 }
 
 sub parse_external_link ($external_link) {

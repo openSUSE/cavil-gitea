@@ -34,8 +34,13 @@ get '/api/v1/notifications' => {
   ]
 };
 
-get '/api/v1/repos/importtest/test/pulls/1' =>
-  {json => {requested_reviewers => [{login => 'kraih'}], head => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}}};
+get '/api/v1/repos/importtest/test/pulls/1' => {
+  json => {
+    requested_reviewers => [{login => 'kraih'}],
+    labels              => [],
+    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}
+  }
+};
 
 my @read_notifications;
 patch '/api/v1/notifications/threads/:id' => sub ($c) {

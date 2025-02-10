@@ -46,9 +46,13 @@ get '/api/v1/notifications' => {
   ]
 };
 
-get '/api/v1/repos/importtest/test/pulls/1' =>
-  {json => {requested_reviewers => [{login => 'legaldb'}], head => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}}
-  };
+get '/api/v1/repos/importtest/test/pulls/1' => {
+  json => {
+    requested_reviewers => [{login => 'legaldb'}],
+    labels              => [{name  => 'critical_priority'}, {name => 'unknown_label'}],
+    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}
+  }
+};
 
 my @read_notifications;
 patch '/api/v1/notifications/threads/:id' => sub ($c) {
@@ -61,7 +65,7 @@ my $test = CavilGiteaTest->new(app);
 
 subtest 'New request' => sub {
   subtest 'Clean run' => sub {
-    my $result = $test->run('--review');
+    my $result = $test->run('--review', '--base-priority', '5');
     is $result->{stdout}, '', 'no output';
 
     like $result->{logs}, qr/\[info\] Connecting to Cavil instance.+http:\/\/127\.0\.0\.1/, 'mock Cavil instance';
@@ -81,7 +85,8 @@ subtest 'New request' => sub {
     is $submitted_packages[0]{external_link}, 'soo#importtest/test!1',                    'right external link';
     is $submitted_packages[0]{rev},           'b352a491da106380cf55019f7ac025077537bca5', 'right rev';
     like $submitted_packages[0]{api}, qr/\/importtest\/test\.git/, 'right api';
-    is $submitted_packages[1], undef, 'no more packages';
+    is $submitted_packages[0]{priority}, 9,     'right priority';
+    is $submitted_packages[1],           undef, 'no more packages';
 
     is $submitted_requests[0]{package},       1,                       'right package';
     is $submitted_requests[0]{external_link}, 'soo#importtest/test!1', 'right external link';
