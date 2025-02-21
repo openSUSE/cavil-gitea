@@ -43,7 +43,7 @@ del '/requests' => sub ($c) {
 };
 
 get '/package/1' =>
-  {json => {state => 'acceptable', result => 'Test accept', priority => 5, login => 'tester', id => 1}};
+  {json => {state => 'acceptable', result => 'Reviewed ok', priority => 5, login => 'tester', id => 1}};
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
@@ -52,22 +52,15 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
     requested_reviewers => [{login => 'legaldb'}],
     labels              => [],
     head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'},
-    state               => 'open'
+    state               => 'closed'
   }
-};
-
-my @posted_results;
-post '/api/v1/repos/importtest/test/pulls/:id/reviews' => sub ($c) {
-  my $params = $c->req->json;
-  push @posted_results, {id => $c->param('id'), %$params};
-  $c->render(json => {});
 };
 
 get '/api/v1/notifications' => {json => []};
 
 my $test = CavilGiteaTest->new(app);
 
-subtest 'Acceptable' => sub {
+subtest 'Closed PR' => sub {
   subtest 'Clean run' => sub {
     my $result = $test->run('--review');
     is $result->{stdout}, '', 'no output';
@@ -78,24 +71,12 @@ subtest 'Acceptable' => sub {
     like $result->{logs}, qr/\[info\] Found 1 open legal reviews, 1 of them with "soo" external link/,
       'open review in Cavil';
     like $result->{logs}, qr/\[info\] Checking status of package 1 \(importtest\/test!1\)/, 'checking Gitea status';
-    like $result->{logs}, qr/\[info\] Package 1 was reviewed as "acceptable"/,              'was reviewed';
+    like $result->{logs}, qr/\[info\] Review request for package 1 is obsolete, removing/,  'obsolete';
   };
 
   subtest 'Cavil state' => sub {
     is_deeply $removed_requests[0], {external_link => 'soo#importtest/test!1'}, 'request removed';
     is $removed_requests[1], undef, 'no more requests';
-  };
-
-  subtest 'Gitea state' => sub {
-    my $url = $test->cavil_gitea->cavil->url;
-    is_deeply $posted_results[0],
-      {
-      id    => 1,
-      body  => "Legal reviewed by *tester* as [acceptable]($url/reviews/details/1):\n```\nTest accept\n```",
-      event => 'APPROVED'
-      },
-      'result posted';
-    is $posted_results[1], undef, 'no more results';
   };
 };
 

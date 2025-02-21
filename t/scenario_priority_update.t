@@ -36,7 +36,7 @@ get '/requests' => {
   }
 };
 
-get '/package/1' => {json => {state => 'new', result => undef, priority => 4}};
+get '/package/1' => {json => {state => 'new', result => undef, priority => 4, login => 'tester', id => 1}};
 
 my @updated_packages;
 patch '/package/1' => sub ($c) {
@@ -50,7 +50,8 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
   json => {
     requested_reviewers => [{login => 'legaldb'}],
     labels              => [{name  => 'High Priority'}],
-    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}
+    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'},
+    state               => 'open'
   }
 };
 

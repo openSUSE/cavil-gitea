@@ -55,7 +55,7 @@ sub check_open_requests ($self) {
     my $result = $cavil->review_result($package);
 
     # Request is obsolete (no longer requested or new commit)
-    if (($info->{checkout} ne $checkout) || !$info->{review_requested}) {
+    if (($info->{checkout} ne $checkout) || !$info->{review_requested} || $info->{state} ne 'open') {
       $log->info(qq{Review request for package $package is obsolete, removing});
       $cavil->remove_request($link);
     }

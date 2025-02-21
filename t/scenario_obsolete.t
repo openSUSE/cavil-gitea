@@ -42,12 +42,19 @@ del '/requests' => sub ($c) {
   $c->render(json => {removed => [1]});
 };
 
-get '/package/1' => {json => {state => 'acceptable', result => 'Reviewed ok', priority => 5}};
+get '/package/1' =>
+  {json => {state => 'acceptable', result => 'Reviewed ok', priority => 5, login => 'tester', id => 1}};
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
-get '/api/v1/repos/importtest/test/pulls/1' =>
-  {json => {requested_reviewers => undef, labels => [], head => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}}};
+get '/api/v1/repos/importtest/test/pulls/1' => {
+  json => {
+    requested_reviewers => undef,
+    labels              => [],
+    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'},
+    state               => 'open'
+  }
+};
 
 get '/api/v1/notifications' => {json => []};
 

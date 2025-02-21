@@ -99,8 +99,12 @@ sub pr_info ($self, $owner, $repo, $number) {
   my $reviewers        = $issue->{requested_reviewers} // [];
   my $review_requested = !!grep { $_->{login} eq $user->{login} } @$reviewers;
   my $labels           = [map { $_->{name} } @{$issue->{labels}}];
-  return {checkout => $issue->{head}{sha}, review_requested => $review_requested, labels => $labels};
-
+  return {
+    checkout         => $issue->{head}{sha},
+    review_requested => $review_requested,
+    labels           => $labels,
+    state            => $issue->{state}
+  };
 }
 
 sub whoami ($self) {

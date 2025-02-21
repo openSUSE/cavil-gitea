@@ -57,13 +57,13 @@ subtest 'build_markdown_comment' => sub {
   };
   is build_markdown_comment($result3), 'Unknown error during legal review.', 'right comment';
 
-  my $result1 = {
+  my $result4 = {
     url      => 'https://src.opensuse.org/reviews/details/4',
     state    => 'acceptable_by_lawyer',
     result   => 'OK',
     reviewer => 'tester4'
   };
-  is build_markdown_comment($result1),
+  is build_markdown_comment($result4),
     "Legal reviewed by *tester4* as [acceptable_by_lawyer](https://src.opensuse.org/reviews/details/4):\n```\nOK\n```",
     'right comment';
 };

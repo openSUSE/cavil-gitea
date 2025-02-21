@@ -36,7 +36,8 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
   json => {
     requested_reviewers => [{login => 'legaldb'}],
     labels              => [],
-    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}
+    head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'},
+    state               => 'open'
   }
 };
 
