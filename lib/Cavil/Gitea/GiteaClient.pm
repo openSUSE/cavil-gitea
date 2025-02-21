@@ -16,6 +16,7 @@
 package Cavil::Gitea::GiteaClient;
 use Mojo::Base -base, -signatures;
 
+use Cavil::Gitea::Util qw(build_markdown_comment);
 use Mojo::URL;
 use Mojo::UserAgent;
 
@@ -79,14 +80,13 @@ sub mark_notification_read ($self, $id) {
 }
 
 sub post_review ($self, $owner, $repo, $number, $result) {
-  my $json = {body => 'Unknown error during legal review', event => 'COMMENT'};
+  my $comment = build_markdown_comment($result);
+  my $json    = {body => $comment, event => 'COMMENT'};
 
   if (($result->{state} eq 'acceptable') || ($result->{state} eq 'acceptable_by_lawyer')) {
-    $json->{body}  = $result->{result} || 'Reviewed ok';
     $json->{event} = 'APPROVED';
   }
   elsif ($result->{state} eq 'unacceptable') {
-    $json->{body}  = $result->{result} || 'Reviewed not ok';
     $json->{event} = 'REQUEST_CHANGES';
   }
 

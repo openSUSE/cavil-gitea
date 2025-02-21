@@ -16,7 +16,7 @@
 use Mojo::Base -strict;
 
 use Test::More;
-use Cavil::Gitea::Util qw(build_external_link build_git_url label_priority parse_external_link);
+use Cavil::Gitea::Util qw(build_external_link build_git_url build_markdown_comment label_priority parse_external_link);
 
 subtest 'build_external_link' => sub {
   is build_external_link({apinick => 'soo', owner => 'foo', repo => 'bar', request => '123'}), 'soo#foo/bar!123',
@@ -26,6 +26,28 @@ subtest 'build_external_link' => sub {
 subtest 'build_git_url' => sub {
   is_deeply build_git_url({api => 'https://src.opensuse.org', owner => 'foo', repo => 'bar'}),
     'https://src.opensuse.org/foo/bar.git', 'right URL';
+};
+
+subtest 'build_markdown_comment' => sub {
+  my $result1 = {
+    url      => 'https://src.opensuse.org/reviews/details/1',
+    state    => 'acceptable',
+    result   => 'Reviewed good',
+    reviewer => 'tester'
+  };
+  is build_markdown_comment($result1),
+    "Legal reviewed by *tester* as [acceptable](https://src.opensuse.org/reviews/details/1):\n```\nReviewed good\n```",
+    'right comment';
+
+  my $result2 = {
+    url      => 'https://src.opensuse.org/reviews/details/2',
+    state    => 'unacceptable',
+    result   => 'Reviewed bad',
+    reviewer => 'tester2'
+  };
+  is build_markdown_comment($result2),
+    "Legal reviewed by *tester2* as [unacceptable](https://src.opensuse.org/reviews/details/2):\n```\nReviewed bad\n```",
+    'right comment';
 };
 
 subtest 'label_priority' => sub {

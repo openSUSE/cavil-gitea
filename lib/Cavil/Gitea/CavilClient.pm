@@ -66,7 +66,13 @@ sub remove_request ($self, $info) {
 
 sub review_result ($self, $package) {
   my $data = $self->_request('GET', "/package/$package");
-  return {state => $data->{state}, result => $data->{result}, priority => $data->{priority}};
+  return {
+    url      => $self->_url("/reviews/details/$data->{id}"),
+    state    => $data->{state},
+    result   => $data->{result},
+    priority => $data->{priority},
+    reviewer => $data->{login}
+  };
 }
 
 sub update_package ($self, $package, $info) {

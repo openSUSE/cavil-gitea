@@ -42,7 +42,8 @@ del '/requests' => sub ($c) {
   $c->render(json => {removed => [1]});
 };
 
-get '/package/1' => {json => {state => 'acceptable_by_lawyer', result => 'Test accept', priority => 5}};
+get '/package/1' =>
+  {json => {state => 'acceptable_by_lawyer', result => 'Test accept', priority => 5, login => 'tester', id => 1}};
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
@@ -85,7 +86,14 @@ subtest 'Acceptable by lawyer' => sub {
   };
 
   subtest 'Gitea state' => sub {
-    is_deeply $posted_results[0], {id => 1, body => 'Test accept', event => 'APPROVED'}, 'result posted';
+    my $url = $test->cavil_gitea->cavil->url;
+    is_deeply $posted_results[0],
+      {
+      id    => 1,
+      body  => "Legal reviewed by *tester* as [acceptable_by_lawyer]($url/reviews/details/1):\n```\nTest accept\n```",
+      event => 'APPROVED'
+      },
+      'result posted';
     is $posted_results[1], undef, 'no more results';
   };
 };

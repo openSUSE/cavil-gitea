@@ -42,7 +42,8 @@ del '/requests' => sub ($c) {
   $c->render(json => {removed => [1]});
 };
 
-get '/package/1' => {json => {state => 'unacceptable', result => 'Wrong package license', priority => 5}};
+get '/package/1' =>
+  {json => {state => 'unacceptable', result => 'Wrong package license', priority => 5, login => 'tester', id => 1}};
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
@@ -85,7 +86,13 @@ subtest 'Unacceptable' => sub {
   };
 
   subtest 'Gitea state' => sub {
-    is_deeply $posted_results[0], {id => 1, body => 'Wrong package license', event => 'REQUEST_CHANGES'},
+    my $url = $test->cavil_gitea->cavil->url;
+    is_deeply $posted_results[0],
+      {
+      id    => 1,
+      body  => "Legal reviewed by *tester* as [unacceptable]($url/reviews/details/1):\n```\nWrong package license\n```",
+      event => 'REQUEST_CHANGES'
+      },
       'result posted';
     is $posted_results[1], undef, 'no more results';
   };

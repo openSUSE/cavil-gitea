@@ -20,7 +20,7 @@ use Exporter   qw(import);
 use List::Util qw(max);
 use Mojo::URL;
 
-our @EXPORT_OK = qw(build_external_link build_git_url label_priority parse_external_link);
+our @EXPORT_OK = qw(build_external_link build_git_url build_markdown_comment label_priority parse_external_link);
 
 sub build_external_link ($info) {
   return "$info->{apinick}#$info->{owner}/$info->{repo}!$info->{request}";
@@ -28,6 +28,16 @@ sub build_external_link ($info) {
 
 sub build_git_url ($info) {
   return Mojo::URL->new($info->{api})->path("/$info->{owner}/$info->{repo}.git");
+}
+
+sub build_markdown_comment ($result) {
+  return 'Unknown error during legal review.'
+    if $result->{state} ne 'acceptable'
+    && $result->{state} ne 'acceptable_by_lawyer'
+    && $result->{state} ne 'unacceptable';
+
+  my $reason = $result->{result} || ($result->{state} eq 'unacceptable' ? 'Reviewed not ok' : 'Reviewed ok');
+  return "Legal reviewed by *$result->{reviewer}* as [$result->{state}]($result->{url}):\n```\n$reason\n```";
 }
 
 sub label_priority ($prio, $map, $labels) {
