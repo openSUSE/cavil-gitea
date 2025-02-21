@@ -26,7 +26,7 @@ has apinick          => 'soo';
 has base_priority    => 4;
 has cavil            => sub ($self) { Cavil::Gitea::CavilClient->new(log => $self->log) };
 has gitea            => sub ($self) { Cavil::Gitea::GiteaClient->new(log => $self->log) };
-has label_priorities => sub { {high_priority => 2, critical_priority => 4} };
+has label_priorities => sub { {'High Priority' => 2, 'Critical Priority' => 4} };
 has log              => sub { Mojo::Log->new };
 
 sub check_open_requests ($self) {

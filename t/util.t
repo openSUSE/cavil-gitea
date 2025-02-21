@@ -69,14 +69,14 @@ subtest 'build_markdown_comment' => sub {
 };
 
 subtest 'label_priority' => sub {
-  is label_priority(4, {high_priority => 2, critical_priority => 4}, []),                    4, 'right priority';
-  is label_priority(5, {high_priority => 2, critical_priority => 4}, []),                    5, 'right priority';
-  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['unknown']),           5, 'right priority';
-  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['high_priority']),     7, 'right priority';
-  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['critical_priority']), 9, 'right priority';
-  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['high_priority', 'critical_priority']), 9,
+  is label_priority(4, {'High Priority' => 2, 'Critical Priority' => 4}, []),                    4, 'right priority';
+  is label_priority(5, {'High Priority' => 2, 'Critical Priority' => 4}, []),                    5, 'right priority';
+  is label_priority(5, {'High Priority' => 2, 'Critical Priority' => 4}, ['unknown']),           5, 'right priority';
+  is label_priority(5, {'High Priority' => 2, 'Critical Priority' => 4}, ['High Priority']),     7, 'right priority';
+  is label_priority(5, {'High Priority' => 2, 'Critical Priority' => 4}, ['Critical Priority']), 9, 'right priority';
+  is label_priority(5, {'High Priority' => 2, 'Critical Priority' => 4}, ['High Priority', 'Critical Priority']), 9,
     'right priority';
-  is label_priority(5, {high_priority => 2, critical_priority => 4}, ['critical_priority', 'high_priority']), 9,
+  is label_priority(5, {'High Priority' => 2, 'Critical Priority' => 4}, ['Critical Priority', 'High Priority']), 9,
     'right priority';
 };
 

@@ -49,7 +49,7 @@ get '/api/v1/notifications' => {
 get '/api/v1/repos/importtest/test/pulls/1' => {
   json => {
     requested_reviewers => [{login => 'legaldb'}],
-    labels              => [{name  => 'critical_priority'}, {name => 'unknown_label'}],
+    labels              => [{name  => 'Critical Priority'}, {name => 'unknown_label'}],
     head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'}
   }
 };
