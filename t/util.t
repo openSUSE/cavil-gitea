@@ -48,6 +48,24 @@ subtest 'build_markdown_comment' => sub {
   is build_markdown_comment($result2),
     "Legal reviewed by *tester2* as [unacceptable](https://src.opensuse.org/reviews/details/2):\n```\nReviewed bad\n```",
     'right comment';
+
+  my $result3 = {
+    url      => 'https://src.opensuse.org/reviews/details/3',
+    state    => 'whatever',
+    result   => 'Reviewed bad',
+    reviewer => 'tester3'
+  };
+  is build_markdown_comment($result3), 'Unknown error during legal review.', 'right comment';
+
+  my $result1 = {
+    url      => 'https://src.opensuse.org/reviews/details/4',
+    state    => 'acceptable_by_lawyer',
+    result   => 'OK',
+    reviewer => 'tester4'
+  };
+  is build_markdown_comment($result1),
+    "Legal reviewed by *tester4* as [acceptable_by_lawyer](https://src.opensuse.org/reviews/details/4):\n```\nOK\n```",
+    'right comment';
 };
 
 subtest 'label_priority' => sub {
