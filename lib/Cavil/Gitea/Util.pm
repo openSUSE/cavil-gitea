@@ -37,6 +37,7 @@ sub build_markdown_comment ($result) {
     && $result->{state} ne 'unacceptable';
 
   my $reason = $result->{result} || ($result->{state} eq 'unacceptable' ? 'Reviewed not ok' : 'Reviewed ok');
+  return "Legal reviewed as [$result->{state}]($result->{url}):\n```\n$reason\n```" unless $result->{reviewer};
   return "Legal reviewed by *$result->{reviewer}* as [$result->{state}]($result->{url}):\n```\n$reason\n```";
 }
 

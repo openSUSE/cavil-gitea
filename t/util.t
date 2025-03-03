@@ -66,6 +66,16 @@ subtest 'build_markdown_comment' => sub {
   is build_markdown_comment($result4),
     "Legal reviewed by *tester4* as [acceptable_by_lawyer](https://src.opensuse.org/reviews/details/4):\n```\nOK\n```",
     'right comment';
+
+  my $result5 = {
+    url      => 'https://src.opensuse.org/reviews/details/5',
+    state    => 'acceptable',
+    result   => 'Auto-accepted',
+    reviewer => undef
+  };
+  is build_markdown_comment($result5),
+    "Legal reviewed as [acceptable](https://src.opensuse.org/reviews/details/5):\n```\nAuto-accepted\n```",
+    'right comment';
 };
 
 subtest 'label_priority' => sub {
