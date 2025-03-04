@@ -79,18 +79,30 @@ sub mark_notification_read ($self, $id) {
   $self->_request('PATCH', "/notifications/threads/$id");
 }
 
+sub post_report ($self, $owner, $repo, $review, $report) {
+  my $ua = $self->ua;
+  my $tx = $ua->build_tx(
+    POST => $self->_url("/repos/$owner/$repo/issues/comments/$review->{comment}/assets?name=report.md") =>
+      $self->_headers,
+    form => {attachment => {content => $report->{text}, filename => 'report.md', 'Content-Type' => 'text/markdown'}}
+  );
+  return $ua->start($tx)->result->is_success;
+}
+
 sub post_review ($self, $owner, $repo, $number, $result) {
   my $comment = build_markdown_comment($result);
-  my $json    = {body => $comment, event => 'COMMENT'};
+  my $data    = $self->_request('POST', "/repos/$owner/$repo/issues/$number/comments", {body => $comment});
 
+  my $json = {event => 'COMMENT'};
   if (($result->{state} eq 'acceptable') || ($result->{state} eq 'acceptable_by_lawyer')) {
     $json->{event} = 'APPROVED';
   }
   elsif ($result->{state} eq 'unacceptable') {
     $json->{event} = 'REQUEST_CHANGES';
   }
-
   $self->_request('POST', "/repos/$owner/$repo/pulls/$number/reviews", $json);
+
+  return {comment => $data->{id}};
 }
 
 sub pr_info ($self, $owner, $repo, $number) {

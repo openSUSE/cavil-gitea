@@ -26,7 +26,7 @@ has ua    => sub { Mojo::UserAgent->new };
 has url   => sub { die 'Cavil URL is required' };
 
 sub get_open_requests ($self) {
-  my $requests = $self->_request('GET', '/requests');
+  my $requests = $self->_request('GET', '/requests')->json;
 
   my @requests;
   for my $r (@{$requests->{requests}}) {
@@ -52,7 +52,7 @@ sub create_request ($self, $info) {
     priority      => $info->{priority}
   };
 
-  my $data       = $self->_request('POST', '/packages', $form);
+  my $data       = $self->_request('POST', '/packages', $form)->json;
   my $package_id = $data->{saved}{id};
   $self->_request('POST', '/requests', {external_link => $external_link, package => $package_id});
 
@@ -60,12 +60,18 @@ sub create_request ($self, $info) {
 }
 
 sub remove_request ($self, $info) {
-  my $data = $self->_request('DELETE', '/requests', {external_link => build_external_link($info)});
+  my $data = $self->_request('DELETE', '/requests', {external_link => build_external_link($info)})->json;
   return !!$data->{removed};
 }
 
+sub review_report ($self, $package) {
+  my $res = $self->_request('GET', "/package/$package/report.txt");
+  return undef unless $res->is_success;
+  return {text => $res->text};
+}
+
 sub review_result ($self, $package) {
-  my $data = $self->_request('GET', "/package/$package");
+  my $data = $self->_request('GET', "/package/$package")->json;
   return {
     url      => $self->_url("/reviews/details/$data->{id}"),
     state    => $data->{state},
@@ -76,13 +82,13 @@ sub review_result ($self, $package) {
 }
 
 sub update_package ($self, $package, $info) {
-  my $data = $self->_request('PATCH', "/package/$package", {priority => $info->{priority}});
+  my $data = $self->_request('PATCH', "/package/$package", {priority => $info->{priority}})->json;
   return !!$data->{updated};
 }
 
 sub update_request ($self, $package, $info) {
   my $form = {external_link => build_external_link($info), state => 'new'};
-  my $data = $self->_request('POST', "/packages/import/$package", $form);
+  my $data = $self->_request('POST', "/packages/import/$package", $form)->json;
   return !!$data->{imported};
 }
 
@@ -94,7 +100,7 @@ sub _request($self, $method, $path, $form = undef) {
   my $ua = $self->ua;
   my $tx = $ua->build_tx($method => $self->_url($path) => $self->_headers, $form ? (form => $form) : ());
   $tx = $ua->start($tx);
-  return $tx->result->json;
+  return $tx->result;
 }
 
 sub _url ($self, $path) {

@@ -44,6 +44,8 @@ del '/requests' => sub ($c) {
 
 get '/package/1' => {json => {state => 'acceptable', result => 'Test accept', priority => 5, login => undef, id => 1}};
 
+get '/package/1/report' => [format => 'txt'] => {text => "Test\nreport\n1\n"};
+
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
 get '/api/v1/repos/importtest/test/pulls/1' => {
@@ -53,6 +55,21 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
     head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'},
     state               => 'open'
   }
+};
+
+my @posted_comments;
+post '/api/v1/repos/importtest/test/issues/:id/comments' => sub ($c) {
+  my $params = $c->req->json;
+  push @posted_comments, {id => $c->param('id'), %$params};
+  $c->render(json => {id => 3});
+};
+
+my @posted_attachments;
+post '/api/v1/repos/importtest/test/issues/comments/:id/assets' => sub ($c) {
+  my $upload = $c->param('attachment');
+  push @posted_attachments,
+    {id => $c->param('id'), name => $c->param('name'), filename => $upload->filename, content => $upload->slurp};
+  $c->render(json => {});
 };
 
 my @posted_results;
@@ -87,13 +104,16 @@ subtest 'Acceptable' => sub {
 
   subtest 'Gitea state' => sub {
     my $url = $test->cavil_gitea->cavil->url;
-    is_deeply $posted_results[0],
-      {
-      id    => 1,
-      body  => "Legal reviewed as [acceptable]($url/reviews/details/1):\n```\nTest accept\n```",
-      event => 'APPROVED'
-      },
-      'result posted';
+    is_deeply $posted_comments[0],
+      {id => 1, body => "Legal reviewed as [acceptable]($url/reviews/details/1):\n```\nTest accept\n```"},
+      'comment posted';
+    is $posted_comments[1], undef, 'no more comments';
+
+    is_deeply $posted_attachments[0],
+      {id => 3, name => 'report.md', filename => 'report.md', content => "Test\nreport\n1\n"}, 'attachment posted';
+    is $posted_attachments[1], undef, 'no more attachments';
+
+    is_deeply $posted_results[0], {id => 1, event => 'APPROVED'}, 'result posted';
     is $posted_results[1], undef, 'no more results';
   };
 };

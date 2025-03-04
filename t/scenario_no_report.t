@@ -43,9 +43,9 @@ del '/requests' => sub ($c) {
 };
 
 get '/package/1' =>
-  {json => {state => 'acceptable_by_lawyer', result => 'Test accept', priority => 5, login => 'tester', id => 1}};
+  {json => {state => 'acceptable', result => 'Test accept', priority => 5, login => 'tester', id => 1}};
 
-get '/package/1/report' => [format => 'txt'] => {text => "Test\nreport\n1\n"};
+get '/package/1/report' => [format => 'txt'] => {text => 'Error message', status => 500};
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
@@ -84,7 +84,7 @@ get '/api/v1/notifications' => {json => []};
 
 my $test = CavilGiteaTest->new(app);
 
-subtest 'Acceptable by lawyer' => sub {
+subtest 'Missing legal report' => sub {
   subtest 'Clean run' => sub {
     my $result = $test->run('--review');
     is $result->{stdout}, '', 'no output';
@@ -95,7 +95,8 @@ subtest 'Acceptable by lawyer' => sub {
     like $result->{logs}, qr/\[info\] Found 1 open legal reviews, 1 of them with "soo" external link/,
       'open review in Cavil';
     like $result->{logs}, qr/\[info\] Checking status of package 1 \(importtest\/test!1\)/, 'checking Gitea status';
-    like $result->{logs}, qr/\[info\] Package 1 was reviewed as "acceptable_by_lawyer"/,    'was reviewed';
+    like $result->{logs}, qr/\[info\] Package 1 was reviewed as "acceptable"/,              'was reviewed';
+    like $result->{logs}, qr/\[info\] No report for package 1/,                             'report download failed';
   };
 
   subtest 'Cavil state' => sub {
@@ -106,16 +107,11 @@ subtest 'Acceptable by lawyer' => sub {
   subtest 'Gitea state' => sub {
     my $url = $test->cavil_gitea->cavil->url;
     is_deeply $posted_comments[0],
-      {
-      id   => 1,
-      body => "Legal reviewed by *tester* as [acceptable_by_lawyer]($url/reviews/details/1):\n```\nTest accept\n```"
-      },
+      {id => 1, body => "Legal reviewed by *tester* as [acceptable]($url/reviews/details/1):\n```\nTest accept\n```"},
       'comment posted';
     is $posted_comments[1], undef, 'no more comments';
 
-    is_deeply $posted_attachments[0],
-      {id => 3, name => 'report.md', filename => 'report.md', content => "Test\nreport\n1\n"}, 'attachment posted';
-    is $posted_attachments[1], undef, 'no more attachments';
+    is $posted_attachments[0], undef, 'no attachments';
 
     is_deeply $posted_results[0], {id => 1, event => 'APPROVED'}, 'result posted';
     is $posted_results[1], undef, 'no more results';
