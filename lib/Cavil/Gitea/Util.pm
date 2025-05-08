@@ -27,7 +27,9 @@ sub build_external_link ($info) {
 }
 
 sub build_git_url ($info) {
-  return Mojo::URL->new($info->{api})->path("/$info->{owner}/$info->{repo}.git");
+  my $url = Mojo::URL->new($info->{api});
+  return "gitea@@{[$url->host]}:$info->{owner}/$info->{repo}.git" if $info->{ssh};
+  return $url->path("/$info->{owner}/$info->{repo}.git");
 }
 
 sub build_markdown_comment ($result) {

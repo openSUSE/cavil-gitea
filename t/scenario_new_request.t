@@ -85,7 +85,7 @@ subtest 'New request' => sub {
     is $submitted_packages[0]{type},          'git',                                      'right type';
     is $submitted_packages[0]{external_link}, 'soo#importtest/test!1',                    'right external link';
     is $submitted_packages[0]{rev},           'b352a491da106380cf55019f7ac025077537bca5', 'right rev';
-    like $submitted_packages[0]{api}, qr/\/importtest\/test\.git/, 'right api';
+    like $submitted_packages[0]{api}, qr/http.+\/importtest\/test\.git/, 'right api';
     is $submitted_packages[0]{priority}, 9,     'right priority';
     is $submitted_packages[1],           undef, 'no more packages';
 

@@ -26,6 +26,8 @@ subtest 'build_external_link' => sub {
 subtest 'build_git_url' => sub {
   is_deeply build_git_url({api => 'https://src.opensuse.org', owner => 'foo', repo => 'bar'}),
     'https://src.opensuse.org/foo/bar.git', 'right URL';
+  is_deeply build_git_url({api => 'https://src.opensuse.org', owner => 'foo', repo => 'bar', ssh => 1}),
+    'gitea@src.opensuse.org:foo/bar.git', 'right URL';
 };
 
 subtest 'build_markdown_comment' => sub {

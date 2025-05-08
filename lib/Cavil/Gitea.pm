@@ -28,6 +28,7 @@ has cavil            => sub ($self) { Cavil::Gitea::CavilClient->new(log => $sel
 has gitea            => sub ($self) { Cavil::Gitea::GiteaClient->new(log => $self->log) };
 has label_priorities => sub { {'High Priority' => 2, 'Critical Priority' => 4} };
 has log              => sub { Mojo::Log->new };
+has ssh              => 0;
 
 sub check_open_requests ($self) {
   my $log   = $self->log;
@@ -109,6 +110,7 @@ sub open_reviews ($self) {
     my $package_id = $cavil->create_request(
       {
         api      => $gitea->url,
+        ssh      => $self->ssh,
         apinick  => $self->apinick,
         owner    => $owner,
         repo     => $repo,
@@ -142,7 +144,8 @@ sub run ($self) {
     'cavil-token=s'   => sub { $self->cavil->token($_[1]) },
     'gitea-url=s'     => sub { $self->gitea->url($_[1]) },
     'gitea-token=s'   => sub { $self->gitea->token($_[1]) },
-    'r|review'        => \my $review;
+    'r|review'        => \my $review,
+    'ssh'             => sub { $self->ssh(1) };
 
   if ($review) {
     $self->peer_info;
@@ -176,6 +179,7 @@ Cavil::Gitea - Gitea legal review bot
         --cavil-token <token>   Cavil API token
         --gitea-url <url>       Gitea server URL
         --gitea-token <token>   Gitea API token
+        --ssh                   Use SSH URLs instead of HTTPS for checkouts
     -h, --help                  Show this summary of available options
     -r, --review                Check notifications for review requests
 
