@@ -109,7 +109,7 @@ sub pr_info ($self, $owner, $repo, $number) {
   my $user             = $self->whoami;
   my $issue            = $self->get_pull_request($owner, $repo, $number);
   my $reviewers        = $issue->{requested_reviewers} // [];
-  my $review_requested = !!grep { $_->{login} eq $user->{login} } @$reviewers;
+  my $review_requested = !!grep { ($_->{login} // '') eq $user->{login} } @$reviewers;
   my $labels           = [map { $_->{name} } @{$issue->{labels}}];
   return {
     checkout         => $issue->{head}{sha},
