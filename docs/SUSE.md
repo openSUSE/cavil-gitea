@@ -12,7 +12,7 @@ requires pull request write permissions to be able to add reports to review comm
 
 ## Repository
 
-Add the `Legal` team as a contributor to each repository that you want to perform legal reviews for.
+Add the `Legal` team as a collaborator to each repository that you want to perform legal reviews for.
 
 ![Repo](images/suse-2-repo.png)
 
