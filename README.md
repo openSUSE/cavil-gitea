@@ -2,3 +2,7 @@
 
   This is a prototype legal review bot for connecting [Gitea](https://gitea.com) with
   [Cavil](https://github.com/openSUSE/cavil).
+
+## Documentation
+
+For more information see the included [documentation](/docs).
