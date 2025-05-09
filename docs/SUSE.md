@@ -1,6 +1,6 @@
 # Gitea Legal Reviews at SUSE
 
-This guide explains how to enable enable legal reviews with [Cavil](https://github.com/openSUSE/cavil) for your
+This guide explains how to enable legal reviews with [Cavil](https://github.com/openSUSE/cavil) for your
 repositories on the SUSE Gitea instances https://src.opensuse.org and https://src.suse.de.
 
 ## Organisation
