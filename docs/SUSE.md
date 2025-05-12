@@ -6,7 +6,7 @@ repositories on the SUSE Gitea instances https://src.opensuse.org and https://sr
 ## Organisation
 
 Add a `Legal` team to the organisation you want to perform legal reviews for, and then add the `legaldb` user. The team
-requires pull request write permissions to be able to add reports to review comments.
+requires **pull request write permissions** to be able to add reports to review comments.
 
 ![Org](images/suse-1-org.png)
 
