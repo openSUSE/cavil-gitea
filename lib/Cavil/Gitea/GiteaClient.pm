@@ -143,7 +143,7 @@ sub _request($self, $method, $path, $options = {}) {
 
   return $tx->result if $options->{ignore_errors} || !(my $err = $tx->error);
   croak "$err->{code} response from Gitea ($method /api/v1$path): $err->{message}" if $err->{code};
-  croak "Connection error from Cavil: $err->{message}";
+  croak "Connection error from Gitea: $err->{message}";
 }
 
 sub _url ($self, $path) {
