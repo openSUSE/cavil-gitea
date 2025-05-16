@@ -38,6 +38,12 @@ get '/requests' => {
 
 get '/package/1' => {json => {state => 'new', result => undef, priority => 5, login => 'tester', id => 1}};
 
+my @updated_packages;
+patch '/package/1' => sub ($c) {
+  push @updated_packages, $c->req->params->to_hash;
+  $c->render(json => {updated => {}});
+};
+
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
 get '/api/v1/repos/importtest/test/pulls/1' => {
@@ -64,6 +70,11 @@ subtest 'Waiting for review' => sub {
     like $result->{logs}, qr/\[info\] Found 1 open legal reviews, 1 of them with "soo" external link/,
       'open review in Cavil';
     like $result->{logs}, qr/\[info\] Checking status of package 1 \(importtest\/test!1\)/, 'checking Gitea status';
+  };
+
+  subtest 'Cavil state' => sub {
+    is $updated_packages[0]{priority}, 4,     'right priority';
+    is $updated_packages[1],           undef, 'no more packages';
   };
 };
 

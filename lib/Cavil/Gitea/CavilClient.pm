@@ -16,6 +16,7 @@
 package Cavil::Gitea::CavilClient;
 use Mojo::Base -base, -signatures;
 
+use Carp qw(croak);
 use Mojo::URL;
 use Mojo::UserAgent;
 use Cavil::Gitea::Util qw(build_external_link build_git_url parse_external_link);
@@ -52,20 +53,20 @@ sub create_request ($self, $info) {
     priority      => $info->{priority}
   };
 
-  my $data       = $self->_request('POST', '/packages', $form)->json;
+  my $data       = $self->_request('POST', '/packages', {form => $form})->json;
   my $package_id = $data->{saved}{id};
-  $self->_request('POST', '/requests', {external_link => $external_link, package => $package_id});
+  $self->_request('POST', '/requests', {form => {external_link => $external_link, package => $package_id}});
 
   return $package_id;
 }
 
 sub remove_request ($self, $info) {
-  my $data = $self->_request('DELETE', '/requests', {external_link => build_external_link($info)})->json;
+  my $data = $self->_request('DELETE', '/requests', {form => {external_link => build_external_link($info)}})->json;
   return !!$data->{removed};
 }
 
 sub review_report ($self, $package) {
-  my $res = $self->_request('GET', "/package/$package/report.txt");
+  my $res = $self->_request('GET', "/package/$package/report.txt", {ignore_errors => 1});
   return undef unless $res->is_success;
   return {text => $res->text};
 }
@@ -82,13 +83,13 @@ sub review_result ($self, $package) {
 }
 
 sub update_package ($self, $package, $info) {
-  my $data = $self->_request('PATCH', "/package/$package", {priority => $info->{priority}})->json;
+  my $data = $self->_request('PATCH', "/package/$package", {form => {priority => $info->{priority}}})->json;
   return !!$data->{updated};
 }
 
 sub update_request ($self, $package, $info) {
   my $form = {external_link => build_external_link($info), state => 'new'};
-  my $data = $self->_request('POST', "/packages/import/$package", $form)->json;
+  my $data = $self->_request('POST', "/packages/import/$package", {form => $form})->json;
   return !!$data->{imported};
 }
 
@@ -96,11 +97,16 @@ sub _headers ($self) {
   return {Authorization => 'Token ' . $self->token};
 }
 
-sub _request($self, $method, $path, $form = undef) {
+sub _request($self, $method, $path, $options = {}) {
+  my $form = $options->{form};
+
   my $ua = $self->ua;
   my $tx = $ua->build_tx($method => $self->_url($path) => $self->_headers, $form ? (form => $form) : ());
   $tx = $ua->start($tx);
-  return $tx->result;
+
+  return $tx->result if $options->{ignore_errors} || !(my $err = $tx->error);
+  croak "$err->{code} response from Cavil ($method $path): $err->{message}" if $err->{code};
+  croak "Connection error from Cavil: $err->{message}";
 }
 
 sub _url ($self, $path) {

@@ -16,6 +16,7 @@
 package Cavil::Gitea::GiteaClient;
 use Mojo::Base -base, -signatures;
 
+use Carp               qw(croak);
 use Cavil::Gitea::Util qw(build_markdown_comment);
 use Mojo::URL;
 use Mojo::UserAgent;
@@ -26,12 +27,13 @@ has ua    => sub { Mojo::UserAgent->new };
 has url   => sub { die 'Gitea URL is required' };
 
 sub get_pull_request ($self, $owner, $repo, $number) {
-  my $issue = $self->_request('GET', "/repos/$owner/$repo/pulls/$number");
+  my $issue = $self->_request('GET', "/repos/$owner/$repo/pulls/$number")->json;
   return $issue;
 }
 
 sub get_notifications ($self) {
-  my $notifications = $self->_request('GET', '/notifications');
+  my $notifications = $self->_request('GET', '/notifications')->json;
+  my @notifications;
   return $notifications;
 }
 
@@ -80,18 +82,18 @@ sub mark_notification_read ($self, $id) {
 }
 
 sub post_report ($self, $owner, $repo, $review, $report) {
-  my $ua = $self->ua;
-  my $tx = $ua->build_tx(
-    POST => $self->_url("/repos/$owner/$repo/issues/comments/$review->{comment}/assets?name=report.md") =>
-      $self->_headers,
-    form => {attachment => {content => $report->{text}, filename => 'report.md', 'Content-Type' => 'text/markdown'}}
+  my $form = {attachment => {content => $report->{text}, filename => 'report.md', 'Content-Type' => 'text/markdown'}};
+  my $res  = $self->_request(
+    'POST',
+    "/repos/$owner/$repo/issues/comments/$review->{comment}/assets?name=report.md",
+    {form => $form, ignore_errors => 1}
   );
-  return $ua->start($tx)->result->is_success;
+  return $res->is_success;
 }
 
 sub post_review ($self, $owner, $repo, $number, $result) {
   my $comment = build_markdown_comment($result);
-  my $data    = $self->_request('POST', "/repos/$owner/$repo/issues/$number/comments", {body => $comment});
+  my $data = $self->_request('POST', "/repos/$owner/$repo/issues/$number/comments", {json => {body => $comment}})->json;
 
   my $json = {event => 'COMMENT'};
   if (($result->{state} eq 'acceptable') || ($result->{state} eq 'acceptable_by_lawyer')) {
@@ -100,7 +102,7 @@ sub post_review ($self, $owner, $repo, $number, $result) {
   elsif ($result->{state} eq 'unacceptable') {
     $json->{event} = 'REQUEST_CHANGES';
   }
-  $self->_request('POST', "/repos/$owner/$repo/pulls/$number/reviews", $json);
+  $self->_request('POST', "/repos/$owner/$repo/pulls/$number/reviews", {json => $json});
 
   return {comment => $data->{id}};
 }
@@ -120,7 +122,7 @@ sub pr_info ($self, $owner, $repo, $number) {
 }
 
 sub whoami ($self) {
-  my $user = $self->_request('GET', '/user');
+  my $user = $self->_request('GET', '/user')->json;
   return {id => $user->{id}, login => $user->{login}};
 }
 
@@ -128,11 +130,20 @@ sub _headers ($self) {
   return {Authorization => 'token ' . $self->token};
 }
 
-sub _request($self, $method, $path, $json = undef) {
+sub _request($self, $method, $path, $options = {}) {
+  my $form = $options->{form};
+  my $json = $options->{json};
+
   my $ua = $self->ua;
-  my $tx = $ua->build_tx($method => $self->_url($path) => $self->_headers, $json ? (json => $json) : ());
+  my $tx = $ua->build_tx(
+    $method => $self->_url($path) => $self->_headers,
+    $form ? (form => $form) : ($json ? (json => $json) : ())
+  );
   $tx = $ua->start($tx);
-  return $tx->result->json;
+
+  return $tx->result if $options->{ignore_errors} || !(my $err = $tx->error);
+  croak "$err->{code} response from Gitea ($method /api/v1$path): $err->{message}" if $err->{code};
+  croak "Connection error from Cavil: $err->{message}";
 }
 
 sub _url ($self, $path) {
