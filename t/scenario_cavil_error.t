@@ -47,6 +47,8 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
   }
 };
 
+get '/api/v1/repos/importtest/test/issues/1/timeline' => {json => [{type => 'pull_push', user => {login => 'tester'}}]};
+
 my $test = CavilGiteaTest->new(app);
 
 subtest 'Error from Cavil' => sub {

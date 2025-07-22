@@ -55,6 +55,8 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
   }
 };
 
+get '/api/v1/repos/importtest/test/issues/1/timeline' => {json => [{type => 'pull_push', user => {login => 'tester'}}]};
+
 get '/api/v1/notifications' => {json => []};
 
 my $test = CavilGiteaTest->new(app);

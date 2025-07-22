@@ -58,6 +58,8 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
   }
 };
 
+get '/api/v1/repos/importtest/test/issues/1/timeline' => {json => [{type => 'pull_push', user => {login => 'tester'}}]};
+
 my @posted_comments;
 post '/api/v1/repos/importtest/test/issues/:id/comments' => sub ($c) {
   my $params = $c->req->json;

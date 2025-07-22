@@ -67,15 +67,22 @@ sub check_open_requests ($self) {
       $cavil->update_request($package, $link);
     }
 
-    # Packag was reviewed
+    # Package was reviewed
     elsif ($result->{state} ne 'new') {
       $log->info(qq{Package $package was reviewed as "$result->{state}"});
-      my $review = $gitea->post_review($owner, $repo, $request_id, $result);
-      if (my $report = $cavil->review_report($package)) {
-        $log->info(qq{Report for package $package could not be posted, maybe missing permission for "$owner/$repo"?})
-          unless $gitea->post_report($owner, $repo, $review, $report);
+
+      # Already reviewed
+      if ($info->{reviewed}) { $log->info(qq{Review was already posted, skipping}) }
+
+      else {
+        my $review = $gitea->post_review($owner, $repo, $request_id, $result);
+        if (my $report = $cavil->review_report($package)) {
+          $log->info(qq{Report for package $package could not be posted, maybe missing permission for "$owner/$repo"?})
+            unless $gitea->post_report($owner, $repo, $review, $report);
+        }
+        else { $log->info(qq{No report for package $package}) }
       }
-      else { $log->info(qq{No report for package $package}) }
+
       $cavil->remove_request($link);
     }
 

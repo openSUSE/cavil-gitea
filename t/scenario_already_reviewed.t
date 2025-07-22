@@ -35,13 +35,17 @@ get '/requests' => {
     ]
   }
 };
-get '/package/1' => {json => {state => 'obsolete', result => 'Reviewed ok', priority => 5, login => 'tester', id => 1}};
 
-my @updated_requests;
-post '/packages/import/1' => sub ($c) {
-  push @updated_requests, $c->req->params->to_hash;
-  $c->render(json => {imported => {}});
+my @removed_requests;
+del '/requests' => sub ($c) {
+  push @removed_requests, $c->req->params->to_hash;
+  $c->render(json => {removed => [1]});
 };
+
+get '/package/1' =>
+  {json => {state => 'acceptable', result => 'Test accept', priority => 5, login => 'tester', id => 1}};
+
+get '/package/1/report' => [format => 'txt'] => {text => "Test\nreport\n1\n"};
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
@@ -54,13 +58,14 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
   }
 };
 
-get '/api/v1/repos/importtest/test/issues/1/timeline' => {json => [{type => 'pull_push', user => {login => 'tester'}}]};
+get '/api/v1/repos/importtest/test/issues/1/timeline' =>
+  {json => [{type => 'pull_push', user => {login => 'tester'}}, {type => 'review', user => {login => 'legaldb'}}]};
 
 get '/api/v1/notifications' => {json => []};
 
 my $test = CavilGiteaTest->new(app);
 
-subtest 'Re-opened review' => sub {
+subtest 'Review already posted' => sub {
   subtest 'Clean run' => sub {
     my $result = $test->run('--review');
     is $result->{stdout}, '', 'no output';
@@ -70,13 +75,14 @@ subtest 'Re-opened review' => sub {
       'mock Gitea instance';
     like $result->{logs}, qr/\[info\] Found 1 open legal reviews, 1 of them with "soo" external link/,
       'open review in Cavil';
-    like $result->{logs}, qr/\[info\] Checking status of package 1 \(importtest\/test!1\)/,    'checking Gitea status';
-    like $result->{logs}, qr/\[info\] Review request for package 1 was obsoleted, re-opening/, 're-opening';
+    like $result->{logs}, qr/\[info\] Checking status of package 1 \(importtest\/test!1\)/, 'checking Gitea status';
+    like $result->{logs}, qr/\[info\] Package 1 was reviewed as "acceptable"/,              'was reviewed';
+    like $result->{logs}, qr/\[info\] Review was already posted, skipping/,                 'already posted';
   };
 
   subtest 'Cavil state' => sub {
-    is_deeply $updated_requests[0], {external_link => 'soo#importtest/test!1', state => 'new'}, 'updated request';
-    is $updated_requests[1], undef, 'no more requests';
+    is_deeply $removed_requests[0], {external_link => 'soo#importtest/test!1'}, 'request removed';
+    is $removed_requests[1], undef, 'no more requests';
   };
 };
 

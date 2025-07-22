@@ -43,6 +43,8 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
   }
 };
 
+get '/api/v1/repos/importtest/test/issues/1/timeline' => {json => [{type => 'pull_push', user => {login => 'tester'}}]};
+
 my @read_notifications;
 patch '/api/v1/notifications/threads/:id' => sub ($c) {
   my $id = $c->param('id');

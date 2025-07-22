@@ -77,6 +77,27 @@ sub get_review_requests ($self) {
   return \@open;
 }
 
+sub get_timeline ($self, $owner, $repo, $number) {
+  my $timeline = $self->_request('GET', "/repos/$owner/$repo/issues/$number/timeline")->json;
+  return $timeline;
+}
+
+sub get_timeline_info ($self, $owner, $repo, $number) {
+  my $user     = $self->whoami;
+  my $timeline = $self->get_timeline($owner, $repo, $number);
+
+  my $info = {commented_since_push => 0, reviewed_since_push => 0};
+  for my $event (reverse @$timeline) {
+    my $type = $event->{type};
+    last if $type eq 'pull_push';
+    next unless $user->{login} eq $event->{user}{login};
+    if    ($type eq 'review')  { $info->{reviewed_since_push}  = 1 }
+    elsif ($type eq 'comment') { $info->{commented_since_push} = 1 }
+  }
+
+  return $info;
+}
+
 sub mark_notification_read ($self, $id) {
   $self->_request('PATCH', "/notifications/threads/$id");
 }
@@ -113,9 +134,14 @@ sub pr_info ($self, $owner, $repo, $number) {
   my $reviewers        = $issue->{requested_reviewers} // [];
   my $review_requested = !!grep { ($_->{login} // '') eq $user->{login} } @$reviewers;
   my $labels           = [map { $_->{name} } @{$issue->{labels}}];
+
+  my $timeline_info = $self->get_timeline_info($owner, $repo, $number);
+
   return {
     checkout         => $issue->{head}{sha},
+    commented        => $timeline_info->{commented_since_push},
     review_requested => $review_requested,
+    reviewed         => $timeline_info->{reviewed_since_push},
     labels           => $labels,
     state            => $issue->{state}
   };
