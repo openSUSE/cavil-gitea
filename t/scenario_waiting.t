@@ -78,6 +78,7 @@ subtest 'Waiting for review' => sub {
       'mock Gitea instance';
     like $result->{logs}, qr/\[info\] Found 1 open legal reviews, 1 of them with "soo" external link/,
       'open review in Cavil';
+    like $result->{logs}, qr/\[info\] Commenting about package 1 review status/, 'commented on review status';
     like $result->{logs}, qr/\[info\] Checking status of package 1 \(importtest\/test!1\)/, 'checking Gitea status';
   };
 
