@@ -33,7 +33,7 @@ sub build_git_url ($info) {
 }
 
 sub build_markdown_comment ($result) {
-  return 'Unknown error during legal review.'
+  return "Legal review [in progress]($result->{url})."
     if $result->{state} ne 'acceptable'
     && $result->{state} ne 'acceptable_by_lawyer'
     && $result->{state} ne 'unacceptable';

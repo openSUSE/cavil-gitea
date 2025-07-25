@@ -57,6 +57,13 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
 
 get '/api/v1/repos/importtest/test/issues/1/timeline' => {json => [{type => 'pull_push', user => {login => 'tester'}}]};
 
+my @posted_comments;
+post '/api/v1/repos/importtest/test/issues/:id/comments' => sub ($c) {
+  my $params = $c->req->json;
+  push @posted_comments, {id => $c->param('id'), %$params};
+  $c->render(json => {id => 3});
+};
+
 get '/api/v1/notifications' => {json => []};
 
 my $test = CavilGiteaTest->new(app);
@@ -78,6 +85,13 @@ subtest 'Updating priority' => sub {
   subtest 'Cavil state' => sub {
     is $updated_packages[0]{priority}, 6,     'right priority';
     is $updated_packages[1],           undef, 'no more packages';
+  };
+
+  subtest 'Gitea state' => sub {
+    my $url = $test->cavil_gitea->cavil->url;
+    is_deeply $posted_comments[0], {id => 1, body => "Legal review [in progress]($url/reviews/details/1)."},
+      'comment posted';
+    is $posted_comments[1], undef, 'no more comments';
   };
 };
 

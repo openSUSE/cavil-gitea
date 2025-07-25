@@ -57,7 +57,8 @@ subtest 'build_markdown_comment' => sub {
     result   => 'Reviewed bad',
     reviewer => 'tester3'
   };
-  is build_markdown_comment($result3), 'Unknown error during legal review.', 'right comment';
+  is build_markdown_comment($result3), "Legal review [in progress](https://src.opensuse.org/reviews/details/3).",
+    'right comment';
 
   my $result4 = {
     url      => 'https://src.opensuse.org/reviews/details/4',
@@ -77,6 +78,15 @@ subtest 'build_markdown_comment' => sub {
   };
   is build_markdown_comment($result5),
     "Legal reviewed as [acceptable](https://src.opensuse.org/reviews/details/5):\n```\nAuto-accepted\n```",
+    'right comment';
+
+  my $result6 = {
+    url      => 'https://src.opensuse.org/reviews/details/6',
+    state    => 'new',
+    result   => 'Whatever',
+    reviewer => 'tester2'
+  };
+  is build_markdown_comment($result6), "Legal review [in progress](https://src.opensuse.org/reviews/details/6).",
     'right comment';
 };
 

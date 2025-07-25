@@ -76,11 +76,7 @@ sub check_open_requests ($self) {
 
       else {
         my $review = $gitea->post_review($owner, $repo, $request_id, $result);
-        if (my $report = $cavil->review_report($package)) {
-          $log->info(qq{Report for package $package could not be posted, maybe missing permission for "$owner/$repo"?})
-            unless $gitea->post_report($owner, $repo, $review, $report);
-        }
-        else { $log->info(qq{No report for package $package}) }
+        $self->_attach_report_to_comment($owner, $repo, $package, $review);
       }
 
       $cavil->remove_request($link);
@@ -89,6 +85,12 @@ sub check_open_requests ($self) {
     # Review is still pending
     else {
       $log->info(qq{Review request for package $package is still pending});
+
+      unless ($info->{commented}) {
+        $log->info(qq{Commenting about package $package review status});
+        my $comment = $gitea->post_comment($owner, $repo, $request_id, $result);
+        $self->_attach_report_to_comment($owner, $repo, $package, $comment);
+      }
 
       my $cavil_prio = $result->{priority};
       my $gitea_prio = label_priority($self->base_priority, $self->label_priorities, $info->{labels});
@@ -162,6 +164,18 @@ sub run ($self) {
   else {
     say extract_usage;
   }
+}
+
+sub _attach_report_to_comment ($self, $owner, $repo, $package, $comment) {
+  my $gitea = $self->gitea;
+  my $cavil = $self->cavil;
+  my $log   = $self->log;
+
+  if (my $report = $cavil->review_report($package)) {
+    $log->info(qq{Report for package $package could not be posted, maybe missing permission for "$owner/$repo"?})
+      unless $gitea->post_report($owner, $repo, $comment, $report);
+  }
+  else { $log->info(qq{No report for package $package}) }
 }
 
 1;

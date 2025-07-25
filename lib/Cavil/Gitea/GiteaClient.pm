@@ -112,9 +112,14 @@ sub post_report ($self, $owner, $repo, $review, $report) {
   return $res->is_success;
 }
 
-sub post_review ($self, $owner, $repo, $number, $result) {
+sub post_comment ($self, $owner, $repo, $number, $result) {
   my $comment = build_markdown_comment($result);
   my $data = $self->_request('POST', "/repos/$owner/$repo/issues/$number/comments", {json => {body => $comment}})->json;
+  return {comment => $data->{id}};
+}
+
+sub post_review ($self, $owner, $repo, $number, $result) {
+  my $comment = $self->post_comment($owner, $repo, $number, $result);
 
   my $json = {event => 'COMMENT'};
   if (($result->{state} eq 'acceptable') || ($result->{state} eq 'acceptable_by_lawyer')) {
@@ -125,7 +130,7 @@ sub post_review ($self, $owner, $repo, $number, $result) {
   }
   $self->_request('POST', "/repos/$owner/$repo/pulls/$number/reviews", {json => $json});
 
-  return {comment => $data->{id}};
+  return $comment;
 }
 
 sub pr_info ($self, $owner, $repo, $number) {
