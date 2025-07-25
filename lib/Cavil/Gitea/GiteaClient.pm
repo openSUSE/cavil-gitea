@@ -51,16 +51,22 @@ sub get_review_requests ($self) {
       my ($owner, $repo, $number) = ($1, $2, $3);
       my $info = $self->pr_info($owner, $repo, $number);
       if ($info->{review_requested}) {
-        $log->trace("Notification $id: review request for $owner/$repo!$number");
-        my $open = {
-          notification => $id,
-          owner        => $owner,
-          repo         => $repo,
-          request      => $number,
-          checkout     => $info->{checkout},
-          labels       => $info->{labels}
-        };
-        push @open, $open;
+        if ($info->{reviewed}) {
+          $log->trace("Notification $id: review request for $owner/$repo!$number, but we already reviewed");
+          $self->mark_notification_read($id);
+        }
+        else {
+          $log->trace("Notification $id: review request for $owner/$repo!$number");
+          my $open = {
+            notification => $id,
+            owner        => $owner,
+            repo         => $repo,
+            request      => $number,
+            checkout     => $info->{checkout},
+            labels       => $info->{labels}
+          };
+          push @open, $open;
+        }
       }
       else {
         $log->trace("Notification $id: review request not for us");
