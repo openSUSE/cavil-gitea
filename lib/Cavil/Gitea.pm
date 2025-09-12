@@ -21,6 +21,7 @@ use Cavil::Gitea::GiteaClient;
 use Cavil::Gitea::Util qw(label_priority);
 use Mojo::Log;
 use Mojo::Util qw(extract_usage getopt);
+use YAML::XS   qw(LoadFile);
 
 has apinick          => 'soo';
 has base_priority    => 4;
@@ -154,15 +155,71 @@ sub run ($self) {
     'gitea-url=s'     => sub { $self->gitea->url($_[1]) },
     'gitea-token=s'   => sub { $self->gitea->token($_[1]) },
     'r|review'        => \my $review,
+    's|sync=s'        => \my $sync,
     'ssh'             => sub { $self->ssh(1) };
 
+  my $log = $self->log;
   if ($review) {
+    $log->info('Review mode');
     $self->peer_info;
     $self->check_open_requests;
     $self->open_reviews;
   }
+  elsif ($sync) {
+    $log->info("Sync mode (config: $sync)");
+    $self->peer_info;
+    $self->sync_products($sync);
+  }
   else {
     say extract_usage;
+  }
+}
+
+sub sync_products ($self, $config) {
+  my $log   = $self->log;
+  my $gitea = $self->gitea;
+  my $cavil = $self->cavil;
+
+  my $gitea_url = $gitea->url;
+  my $ssh       = $self->ssh;
+  my $apinick   = $self->apinick;
+
+  my $products = LoadFile($config);
+  for my $product (@{$products->{products}}) {
+    next unless my $name  = $product->{name};
+    next unless my $owner = $product->{owner};
+    next unless my $repo  = $product->{repo};
+
+    $log->info(qq{Product "$name" from repo "$owner/$repo"});
+    my $list = $gitea->get_packages_for_project($owner, $repo);
+    my @packages;
+    for my $package (@$list) {
+      my $owner      = $package->{owner};
+      my $repo       = $package->{repo};
+      my $checkout   = $package->{checkout};
+      my $package_id = $cavil->create_package(
+        {
+          api           => $gitea_url,
+          ssh           => $ssh,
+          apinick       => $apinick,
+          owner         => $owner,
+          repo          => $repo,
+          checkout      => $checkout,
+          external_link => $name,
+          priority      => $self->base_priority
+        }
+      );
+      push @packages, $package_id;
+      $log->info(qq{- $owner/$repo#$checkout: $package_id});
+    }
+
+    if (@packages) { $cavil->update_product($name, \@packages) }
+
+    # Delete empty products
+    else {
+      $log->info('No packages found');
+      $cavil->remove_product($name);
+    }
   }
 }
 
@@ -193,6 +250,11 @@ Cavil::Gitea - Gitea legal review bot
       --gitea-url https://src.suse.de --gitea-token 1234 --api-nick ssd\
       --review
 
+    # Synchronize products
+    cavil-gitea --cavil-url https://legaldb.suse.de --cavil-token 4321\
+      --gitea-url https://src.suse.de --gitea-token 1234\
+      --sync /etc/cavil-gitea/opensuse.yml
+
   Options:
         --api-nick <nick>       API nickname, defaults to 'soo'
         --base-priority <num>   Base priority for legal reviews, defaults to 4
@@ -200,9 +262,10 @@ Cavil::Gitea - Gitea legal review bot
         --cavil-token <token>   Cavil API token
         --gitea-url <url>       Gitea server URL
         --gitea-token <token>   Gitea API token
-        --ssh                   Use SSH URLs instead of HTTPS for checkouts
     -h, --help                  Show this summary of available options
     -r, --review                Check notifications for review requests
+        --ssh                   Use SSH URLs instead of HTTPS for checkouts
+    -s, --sync <file>           Sync products from config file
 
 =head1 DESCRIPTION
 

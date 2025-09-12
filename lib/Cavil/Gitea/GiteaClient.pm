@@ -17,7 +17,7 @@ package Cavil::Gitea::GiteaClient;
 use Mojo::Base -base, -signatures;
 
 use Carp               qw(croak);
-use Cavil::Gitea::Util qw(build_markdown_comment);
+use Cavil::Gitea::Util qw(build_markdown_comment parse_git_url);
 use Mojo::URL;
 use Mojo::UserAgent;
 
@@ -35,6 +35,28 @@ sub get_notifications ($self) {
   my $notifications = $self->_request('GET', '/notifications')->json;
   my @notifications;
   return $notifications;
+}
+
+sub get_packages_for_project ($self, $owner, $repo) {
+  my $log  = $self->log;
+  my $list = $self->_request('GET', "/repos/$owner/$repo/contents")->json;
+
+  my @packages;
+  my $host = $self->_host;
+  for my $item (@$list) {
+    next unless $item->{type} eq 'submodule';
+
+    my $url = $item->{submodule_git_url};
+    if (my $info = parse_git_url($url)) {
+      if ($info->{host} eq $host) {
+        push @packages, {owner => $info->{owner}, repo => $info->{repo}, checkout => $item->{sha}};
+      }
+      else { $log->warn("Ignoring submodule from different host: $url") }
+    }
+    else { $log->warn("Ignoring submodule in unknown format: $url") }
+  }
+
+  return \@packages;
 }
 
 sub get_review_requests ($self) {
@@ -166,6 +188,8 @@ sub whoami ($self) {
 sub _headers ($self) {
   return {Authorization => 'token ' . $self->token};
 }
+
+sub _host ($self) { Mojo::URL->new($self->url)->host_port }
 
 sub _request($self, $method, $path, $options = {}) {
   my $form = $options->{form};

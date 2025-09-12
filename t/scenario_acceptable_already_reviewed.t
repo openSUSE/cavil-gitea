@@ -97,6 +97,7 @@ subtest 'Review posted for previous commit' => sub {
     my $result = $test->run('--review');
     is $result->{stdout}, '', 'no output';
 
+    like $result->{logs}, qr/\[info\] Review mode/,                                         'review mode';
     like $result->{logs}, qr/\[info\] Connecting to Cavil instance.+http:\/\/127\.0\.0\.1/, 'mock Cavil instance';
     like $result->{logs}, qr/\[info\] Connecting to Gitea instance.+http:\/\/127\.0\.0\.1.+soo.+legaldb/,
       'mock Gitea instance';

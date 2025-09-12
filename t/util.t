@@ -16,7 +16,8 @@
 use Mojo::Base -strict;
 
 use Test::More;
-use Cavil::Gitea::Util qw(build_external_link build_git_url build_markdown_comment label_priority parse_external_link);
+use Cavil::Gitea::Util
+  qw(build_external_link build_git_url build_markdown_comment label_priority parse_external_link parse_git_url);
 
 subtest 'build_external_link' => sub {
   is build_external_link({apinick => 'soo', owner => 'foo', repo => 'bar', request => '123'}), 'soo#foo/bar!123',
@@ -108,6 +109,16 @@ subtest 'parse_external_link' => sub {
   is_deeply parse_external_link('obs#123'), {apinick => 'obs', request => '123'}, 'right data';
   is_deeply parse_external_link('soo#foo/bar!123'),
     {apinick => 'soo', owner => 'foo', repo => 'bar', request => '123'}, 'right data';
+};
+
+subtest 'parse_git_url' => sub {
+  is_deeply parse_git_url('https://src.opensuse.org/foo/bar.git'),
+    {host => 'src.opensuse.org', owner => 'foo', repo => 'bar'}, 'right data';
+  is_deeply parse_git_url('http://127.0.0.1:36755/importtest/nodejs-common.git'),
+    {host => '127.0.0.1:36755', owner => 'importtest', repo => 'nodejs-common'}, 'right data';
+  is parse_git_url('user@src.opensuse.org:/foo/bar.git/'), undef, 'wrong scheme';
+  is parse_git_url('https://src.opensuse.org/foo/bar'),    undef, 'wrong path';
+  is parse_git_url('https:///foo/bar.git'),                undef, 'wrong host';
 };
 
 done_testing;

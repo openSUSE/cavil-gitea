@@ -42,22 +42,29 @@ sub get_open_requests ($self) {
   return \@requests;
 }
 
-sub create_request ($self, $info) {
-  my $external_link = build_external_link($info);
-  my $form          = {
+sub create_package ($self, $info) {
+  my $form = {
     api           => build_git_url($info),
     package       => $info->{repo},
     rev           => $info->{checkout},
-    external_link => $external_link,
+    external_link => $info->{external_link},
     type          => 'git',
     priority      => $info->{priority}
   };
+  my $data = $self->_request('POST', '/packages', {form => $form})->json;
+  return $data->{saved}{id};
+}
 
-  my $data       = $self->_request('POST', '/packages', {form => $form})->json;
-  my $package_id = $data->{saved}{id};
+sub create_request ($self, $info) {
+  my $external_link = $info->{external_link} = build_external_link($info);
+  my $package_id    = $self->create_package($info);
   $self->_request('POST', '/requests', {form => {external_link => $external_link, package => $package_id}});
-
   return $package_id;
+}
+
+sub remove_product ($self, $name) {
+  my $data = $self->_request('DELETE', '/products', {form => {name => $name}})->json;
+  return !!$data->{removed};
 }
 
 sub remove_request ($self, $info) {
@@ -84,6 +91,11 @@ sub review_result ($self, $package) {
 
 sub update_package ($self, $package, $info) {
   my $data = $self->_request('PATCH', "/package/$package", {form => {priority => $info->{priority}}})->json;
+  return !!$data->{updated};
+}
+
+sub update_product ($self, $name, $packages) {
+  my $data = $self->_request('PATCH', "/products/$name", {form => {id => $packages}})->json;
   return !!$data->{updated};
 }
 
