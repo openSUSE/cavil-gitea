@@ -23,7 +23,7 @@ use Mojo::UserAgent;
 
 has 'log';
 has token => sub { die 'Gitea token is required' };
-has ua    => sub { Mojo::UserAgent->new->inactivity_timeout(600) };
+has ua    => sub { Mojo::UserAgent->new->inactivity_timeout(3600) };
 has url   => sub { die 'Gitea URL is required' };
 
 sub get_pull_request ($self, $owner, $repo, $number) {
