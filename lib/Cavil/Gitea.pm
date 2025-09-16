@@ -18,10 +18,9 @@ use Mojo::Base -base, -signatures;
 
 use Cavil::Gitea::CavilClient;
 use Cavil::Gitea::GiteaClient;
-use Cavil::Gitea::Util qw(label_priority);
+use Cavil::Gitea::Util qw(label_priority parse_product_file);
 use Mojo::Log;
 use Mojo::Util qw(extract_usage getopt);
-use YAML::XS   qw(LoadFile);
 
 has apinick          => 'soo';
 has base_priority    => 4;
@@ -184,14 +183,15 @@ sub sync_products ($self, $config) {
   my $ssh       = $self->ssh;
   my $apinick   = $self->apinick;
 
-  my $products = LoadFile($config);
-  for my $product (@{$products->{products}}) {
-    next unless my $name  = $product->{name};
-    next unless my $owner = $product->{owner};
-    next unless my $repo  = $product->{repo};
+  my $products = parse_product_file($config);
+  for my $product (@$products) {
+    my $name   = $product->{name};
+    my $owner  = $product->{owner};
+    my $repo   = $product->{repo};
+    my $branch = $product->{branch};
 
-    $log->info(qq{Product "$name" from repo "$owner/$repo"});
-    my $list = $gitea->get_packages_for_project($owner, $repo);
+    $log->info(qq{Product "$name" from repo "$owner/$repo#$branch"});
+    my $list = $gitea->get_packages_for_project($owner, $repo, $branch);
     my @packages;
     for my $package (@$list) {
       my $owner      = $package->{owner};

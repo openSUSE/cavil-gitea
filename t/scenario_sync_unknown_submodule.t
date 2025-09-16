@@ -65,7 +65,7 @@ subtest 'Product with package in unknown submodule format' => sub {
     like $result->{logs}, qr/\[info\] Connecting to Cavil instance.+http:\/\/127\.0\.0\.1/, 'mock Cavil instance';
     like $result->{logs}, qr/\[info\] Connecting to Gitea instance.+http:\/\/127\.0\.0\.1.+soo.+legaldb/,
       'mock Gitea instance';
-    like $result->{logs}, qr/\[info\] Product "importtest" from repo "importtest\/_ObsPrj"/, 'found product';
+    like $result->{logs}, qr/\[info\] Product "importtest" from repo "importtest\/_ObsPrj#main"/, 'found product';
     like $result->{logs}, qr/\[warn\] Ignoring submodule in unknown format: git\+foo:unknown/,
       'unknown submodule format';
     like $result->{logs}, qr/\[info\] No packages found/, 'no packages found';

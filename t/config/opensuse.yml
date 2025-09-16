@@ -1,5 +1,4 @@
 ---
 products:
   - name: importtest
-    owner: importtest
-    repo: _ObsPrj
+    repo: importtest/_ObsPrj#main

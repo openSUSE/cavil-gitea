@@ -37,9 +37,9 @@ sub get_notifications ($self) {
   return $notifications;
 }
 
-sub get_packages_for_project ($self, $owner, $repo) {
+sub get_packages_for_project ($self, $owner, $repo, $branch) {
   my $log  = $self->log;
-  my $list = $self->_request('GET', "/repos/$owner/$repo/contents")->json;
+  my $list = $self->_request('GET', "/repos/$owner/$repo/contents", {form => {ref => $branch}})->json;
 
   my @packages;
   my $host = $self->_host;

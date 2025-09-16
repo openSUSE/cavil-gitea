@@ -20,9 +20,12 @@ use Carp       qw(croak);
 use Exporter   qw(import);
 use List::Util qw(max);
 use Mojo::URL;
+use YAML::XS qw(LoadFile);
 
-our @EXPORT_OK
-  = qw(build_external_link build_git_url build_markdown_comment label_priority parse_external_link parse_git_url);
+our @EXPORT_OK = (
+  qw(build_external_link build_git_url build_markdown_comment label_priority),
+  qw(parse_external_link parse_git_url parse_product_file)
+);
 
 sub build_external_link ($info) {
   return "$info->{apinick}#$info->{owner}/$info->{repo}!$info->{request}";
@@ -67,6 +70,20 @@ sub parse_git_url ($git) {
   return undef unless my $host = $url->host_port;
   return undef unless $url->path =~ m{^/([^/]+)/(.+?)\.git$};
   return {host => $host, owner => $1, repo => $2};
+}
+
+sub parse_product_file ($path) {
+  my $data = LoadFile($path);
+  return [] unless $data->{products} && ref $data->{products} eq 'ARRAY';
+
+  my @products;
+  for my $product (@{$data->{products}}) {
+    next unless $product->{name};
+    next unless ($product->{repo} // '') =~ m{^([^/]+)/([^#]+)#(.+)$};
+    push @products, {name => $product->{name}, owner => $1, repo => $2, branch => $3};
+  }
+
+  return \@products;
 }
 
 1;

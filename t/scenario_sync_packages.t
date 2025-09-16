@@ -27,7 +27,9 @@ app->log->level('error');
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
+my $branch;
 get '/api/v1/repos/importtest/_ObsPrj/contents' => sub ($c) {
+  $branch = $c->param('ref');
   $c->render(
     json => [
       {
@@ -90,9 +92,9 @@ subtest 'Product with multiple packages' => sub {
     like $result->{logs}, qr/\[info\] Connecting to Cavil instance.+http:\/\/127\.0\.0\.1/, 'mock Cavil instance';
     like $result->{logs}, qr/\[info\] Connecting to Gitea instance.+http:\/\/127\.0\.0\.1.+soo.+legaldb/,
       'mock Gitea instance';
-    like $result->{logs}, qr/\[info\] Product "importtest" from repo "importtest\/_ObsPrj"/, 'found product';
-    like $result->{logs}, qr/\[info\] - pool\/nodejs-common#0e1ded.+: 28/,                   'found first package';
-    like $result->{logs}, qr/\[info\] - pool\/perl-Mojolicious.+: 29/,                       'found second package';
+    like $result->{logs}, qr/\[info\] Product "importtest" from repo "importtest\/_ObsPrj#main"/, 'found product';
+    like $result->{logs}, qr/\[info\] - pool\/nodejs-common#0e1ded.+: 28/,                        'found first package';
+    like $result->{logs}, qr/\[info\] - pool\/perl-Mojolicious.+: 29/, 'found second package';
   };
 
   subtest 'Cavil state' => sub {
@@ -112,6 +114,10 @@ subtest 'Product with multiple packages' => sub {
 
     is scalar @patched_products, 1, 'one product patched';
     is_deeply $patched_products[0], {name => 'importtest', ids => [28, 29]}, 'product updated';
+  };
+
+  subtest 'Gitea state' => sub {
+    is $branch, 'main', 'correct branch';
   };
 };
 

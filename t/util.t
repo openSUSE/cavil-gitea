@@ -16,8 +16,9 @@
 use Mojo::Base -strict;
 
 use Test::More;
-use Cavil::Gitea::Util
-  qw(build_external_link build_git_url build_markdown_comment label_priority parse_external_link parse_git_url);
+use Cavil::Gitea::Util (qw(build_external_link build_git_url build_markdown_comment label_priority),
+  qw(parse_external_link parse_git_url parse_product_file));
+use Mojo::File qw(curfile);
 
 subtest 'build_external_link' => sub {
   is build_external_link({apinick => 'soo', owner => 'foo', repo => 'bar', request => '123'}), 'soo#foo/bar!123',
@@ -119,6 +120,13 @@ subtest 'parse_git_url' => sub {
   is parse_git_url('user@src.opensuse.org:/foo/bar.git/'), undef, 'wrong scheme';
   is parse_git_url('https://src.opensuse.org/foo/bar'),    undef, 'wrong path';
   is parse_git_url('https:///foo/bar.git'),                undef, 'wrong host';
+};
+
+subtest 'parse_product_file' => sub {
+  my $products = parse_product_file(curfile->sibling('config')->child('opensuse.yml')->to_string);
+  is_deeply $products, [{name => 'importtest', owner => 'importtest', repo => '_ObsPrj', branch => 'main'}],
+    'right data';
+  is_deeply parse_product_file(curfile->sibling('config')->child('empty.yml')->to_string), [], 'no products';
 };
 
 done_testing;
