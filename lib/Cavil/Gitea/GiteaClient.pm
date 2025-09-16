@@ -47,11 +47,8 @@ sub get_packages_for_project ($self, $owner, $repo, $branch) {
     next unless $item->{type} eq 'submodule';
 
     my $url = $item->{submodule_git_url};
-    if (my $info = parse_git_url($url)) {
-      if ($info->{host} eq $host) {
-        push @packages, {owner => $info->{owner}, repo => $info->{repo}, checkout => $item->{sha}};
-      }
-      else { $log->warn("Ignoring submodule from different host: $url") }
+    if (my $info = parse_git_url($url, $host)) {
+      push @packages, {owner => $info->{owner}, repo => $info->{repo}, checkout => $item->{sha}};
     }
     else { $log->warn("Ignoring submodule in unknown format: $url") }
   }

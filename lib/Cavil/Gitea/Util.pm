@@ -64,10 +64,13 @@ sub parse_external_link ($external_link) {
   }
 }
 
-sub parse_git_url ($git) {
+sub parse_git_url ($git, $base_host) {
+  return {host => $base_host, owner => $1, repo => $2} if $git =~ /^\.\.\/\.\.\/([^\/]+)\/(.+)$/;
+
   my $url = Mojo::URL->new($git);
   return undef unless ($url->scheme // '') =~ /^https?$/;
   return undef unless my $host = $url->host_port;
+  return undef unless $base_host eq $host;
   return undef unless $url->path =~ m{^/([^/]+)/(.+?)\.git$};
   return {host => $host, owner => $1, repo => $2};
 }

@@ -113,13 +113,15 @@ subtest 'parse_external_link' => sub {
 };
 
 subtest 'parse_git_url' => sub {
-  is_deeply parse_git_url('https://src.opensuse.org/foo/bar.git'),
+  is_deeply parse_git_url('https://src.opensuse.org/foo/bar.git', 'src.opensuse.org'),
     {host => 'src.opensuse.org', owner => 'foo', repo => 'bar'}, 'right data';
-  is_deeply parse_git_url('http://127.0.0.1:36755/importtest/nodejs-common.git'),
+  is_deeply parse_git_url('../../foo/bar', 'src.opensuse.org'),
+    {host => 'src.opensuse.org', owner => 'foo', repo => 'bar'}, 'right data';
+  is_deeply parse_git_url('http://127.0.0.1:36755/importtest/nodejs-common.git', '127.0.0.1:36755'),
     {host => '127.0.0.1:36755', owner => 'importtest', repo => 'nodejs-common'}, 'right data';
-  is parse_git_url('user@src.opensuse.org:/foo/bar.git/'), undef, 'wrong scheme';
-  is parse_git_url('https://src.opensuse.org/foo/bar'),    undef, 'wrong path';
-  is parse_git_url('https:///foo/bar.git'),                undef, 'wrong host';
+  is parse_git_url('user@src.opensuse.org:/foo/bar.git/', 'src.opensuse.org'), undef, 'wrong scheme';
+  is parse_git_url('https://src.opensuse.org/foo/bar',    'src.opensuse.org'), undef, 'wrong path';
+  is parse_git_url('https:///foo/bar.git',                'src.opensuse.org'), undef, 'wrong host';
 };
 
 subtest 'parse_product_file' => sub {
