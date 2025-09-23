@@ -27,7 +27,16 @@ has base_priority    => 4;
 has cavil            => sub ($self) { Cavil::Gitea::CavilClient->new(log => $self->log) };
 has gitea            => sub ($self) { Cavil::Gitea::GiteaClient->new(log => $self->log) };
 has label_priorities => sub {
-  {'High Priority' => 2, 'Critical Priority' => 4, 'legaldb/High Priority' => 2, 'legaldb/Critical Priority' => 4}
+  {
+    'High Priority'             => 2,
+    'Critical Priority'         => 4,
+    'cavil/High Priority'       => 2,
+    'cavil/Critical Priority'   => 4,
+    'legal/High Priority'       => 2,
+    'legal/Critical Priority'   => 4,
+    'legaldb/High Priority'     => 2,
+    'legaldb/Critical Priority' => 4
+  }
 };
 has log => sub { Mojo::Log->new };
 has ssh => 0;
