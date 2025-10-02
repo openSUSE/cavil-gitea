@@ -65,14 +65,18 @@ sub parse_external_link ($external_link) {
 }
 
 sub parse_git_url ($git, $base_host) {
-  return {host => $base_host, owner => $1, repo => $2} if $git =~ /^\.\.\/\.\.\/([^\/]+)\/(.+)$/;
+  return {host => $base_host, owner => $1, repo => $2, checkout => undef} if $git =~ /^\.\.\/\.\.\/([^\/]+)\/(.+)$/;
 
   my $url = Mojo::URL->new($git);
   return undef unless ($url->scheme // '') =~ /^https?$/;
   return undef unless my $host = $url->host_port;
   return undef unless $base_host eq $host;
-  return undef unless $url->path =~ m{^/([^/]+)/(.+?)\.git$};
-  return {host => $host, owner => $1, repo => $2};
+
+  my $path = $url->path;
+  return {host => $host, owner => $1, repo => $2, checkout => undef} if $path =~ m{^/([^/]+)/(.+?)\.git$};
+  return {host => $host, owner => $1, repo => $2, checkout => $3}    if $path =~ m{^/([^/]+)/(.+?)/tree/(.+)$};
+
+  return undef;
 }
 
 sub parse_product_file ($path) {

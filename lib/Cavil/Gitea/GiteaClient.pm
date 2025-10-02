@@ -22,24 +22,27 @@ use Mojo::URL;
 use Mojo::UserAgent;
 
 has 'log';
-has token => sub { die 'Gitea token is required' };
-has ua    => sub { Mojo::UserAgent->new->inactivity_timeout(3600) };
-has url   => sub { die 'Gitea URL is required' };
+has token       => sub { die 'Gitea token is required' };
+has ua          => sub { Mojo::UserAgent->new->inactivity_timeout(3600) };
+has url         => sub { die 'Gitea URL is required' };
+has workarounds => 0;
 
 sub get_pull_request ($self, $owner, $repo, $number) {
-  my $issue = $self->_request('GET', "/repos/$owner/$repo/pulls/$number")->json;
+  my $issue = $self->_request('GET', "/api/v1/repos/$owner/$repo/pulls/$number")->json;
   return $issue;
 }
 
 sub get_notifications ($self) {
-  my $notifications = $self->_request('GET', '/notifications')->json;
+  my $notifications = $self->_request('GET', '/api/v1/notifications')->json;
   my @notifications;
   return $notifications;
 }
 
 sub get_packages_for_project ($self, $owner, $repo, $branch) {
+  return $self->_scrape_packages_for_project($owner, $repo, $branch) if $self->workarounds;
+
   my $log  = $self->log;
-  my $list = $self->_request('GET', "/repos/$owner/$repo/contents", {form => {ref => $branch}})->json;
+  my $list = $self->_request('GET', "/api/v1/repos/$owner/$repo/contents", {form => {ref => $branch}})->json;
 
   my @packages;
   my $host = $self->_host;
@@ -48,7 +51,7 @@ sub get_packages_for_project ($self, $owner, $repo, $branch) {
 
     my $url = $item->{submodule_git_url};
     if (my $info = parse_git_url($url, $host)) {
-      push @packages, {owner => $info->{owner}, repo => $info->{repo}, checkout => $item->{sha}};
+      push @packages, {owner => $info->{owner}, repo => $info->{repo}, checkout => $info->{checkout} || $item->{sha}};
     }
     else { $log->warn("Ignoring submodule in unknown format: $url") }
   }
@@ -103,7 +106,7 @@ sub get_review_requests ($self) {
 }
 
 sub get_timeline ($self, $owner, $repo, $number) {
-  my $timeline = $self->_request('GET', "/repos/$owner/$repo/issues/$number/timeline")->json;
+  my $timeline = $self->_request('GET', "/api/v1/repos/$owner/$repo/issues/$number/timeline")->json;
   return $timeline;
 }
 
@@ -124,14 +127,14 @@ sub get_timeline_info ($self, $owner, $repo, $number) {
 }
 
 sub mark_notification_read ($self, $id) {
-  $self->_request('PATCH', "/notifications/threads/$id");
+  $self->_request('PATCH', "/api/v1/notifications/threads/$id");
 }
 
 sub post_report ($self, $owner, $repo, $review, $report) {
   my $form = {attachment => {content => $report->{text}, filename => 'report.md', 'Content-Type' => 'text/markdown'}};
   my $res  = $self->_request(
     'POST',
-    "/repos/$owner/$repo/issues/comments/$review->{comment}/assets?name=report.md",
+    "/api/v1/repos/$owner/$repo/issues/comments/$review->{comment}/assets?name=report.md",
     {form => $form, ignore_errors => 1}
   );
   return $res->is_success;
@@ -139,7 +142,8 @@ sub post_report ($self, $owner, $repo, $review, $report) {
 
 sub post_comment ($self, $owner, $repo, $number, $result) {
   my $comment = build_markdown_comment($result);
-  my $data = $self->_request('POST', "/repos/$owner/$repo/issues/$number/comments", {json => {body => $comment}})->json;
+  my $data
+    = $self->_request('POST', "/api/v1/repos/$owner/$repo/issues/$number/comments", {json => {body => $comment}})->json;
   return {comment => $data->{id}};
 }
 
@@ -153,7 +157,7 @@ sub post_review ($self, $owner, $repo, $number, $result) {
   elsif ($result->{state} eq 'unacceptable') {
     $json->{event} = 'REQUEST_CHANGES';
   }
-  $self->_request('POST', "/repos/$owner/$repo/pulls/$number/reviews", {json => $json});
+  $self->_request('POST', "/api/v1/repos/$owner/$repo/pulls/$number/reviews", {json => $json});
 
   return $comment;
 }
@@ -178,7 +182,7 @@ sub pr_info ($self, $owner, $repo, $number) {
 }
 
 sub whoami ($self) {
-  my $user = $self->_request('GET', '/user')->json;
+  my $user = $self->_request('GET', '/api/v1/user')->json;
   return {id => $user->{id}, login => $user->{login}};
 }
 
@@ -200,12 +204,30 @@ sub _request($self, $method, $path, $options = {}) {
   $tx = $ua->start($tx);
 
   return $tx->result if $options->{ignore_errors} || !(my $err = $tx->error);
-  croak "$err->{code} response from Gitea ($method /api/v1$path): $err->{message}" if $err->{code};
+  croak "$err->{code} response from Gitea ($method $path): $err->{message}" if $err->{code};
   croak "Connection error from Gitea: $err->{message}";
 }
 
-sub _url ($self, $path) {
-  return Mojo::URL->new($self->url . "/api/v1$path");
+sub _scrape_packages_for_project ($self, $owner, $repo, $branch) {
+  my $log = $self->log;
+  my $dom = $self->_request('GET', "/$owner/$repo/src/branch/$branch/")->dom;
+
+  my $links = $dom->find('div#repo-files-table div.repo-file-item div.repo-file-cell a.text.primary[href]');
+  my $base  = Mojo::URL->new($self->url);
+  my $host  = $base->host_port;
+
+  my @packages;
+  for my $link ($links->each) {
+    my $url = Mojo::URL->new($link->{href})->base($base)->to_abs->to_string;
+    if (my $info = parse_git_url($url, $host)) {
+      push @packages, {owner => $info->{owner}, repo => $info->{repo}, checkout => $info->{checkout}};
+    }
+    else { $log->warn("Ignoring submodule link in unknown format: $url") }
+  }
+
+  return \@packages;
 }
+
+sub _url ($self, $path) { Mojo::URL->new($self->url . $path) }
 
 1;
