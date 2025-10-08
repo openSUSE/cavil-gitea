@@ -156,6 +156,7 @@ sub post_review ($self, $owner, $repo, $number, $result) {
   }
   elsif ($result->{state} eq 'unacceptable') {
     $json->{event} = 'REQUEST_CHANGES';
+    $json->{body}  = 'Changes requested based on legal review.';
   }
   $self->_request('POST', "/api/v1/repos/$owner/$repo/pulls/$number/reviews", {json => $json});
 

@@ -118,7 +118,8 @@ subtest 'Unacceptable' => sub {
       {id => 3, name => 'report.md', filename => 'report.md', content => "Test\nreport\n1\n"}, 'attachment posted';
     is $posted_attachments[1], undef, 'no more attachments';
 
-    is_deeply $posted_results[0], {id => 1, event => 'REQUEST_CHANGES'}, 'result posted';
+    is_deeply $posted_results[0],
+      {id => 1, event => 'REQUEST_CHANGES', body => 'Changes requested based on legal review.'}, 'result posted';
     is $posted_results[1], undef, 'no more results';
   };
 };
