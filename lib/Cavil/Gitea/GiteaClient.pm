@@ -28,8 +28,9 @@ has url         => sub { die 'Gitea URL is required' };
 has workarounds => 0;
 
 sub get_pull_request ($self, $owner, $repo, $number) {
-  my $issue = $self->_request('GET', "/api/v1/repos/$owner/$repo/pulls/$number")->json;
-  return $issue;
+  my $res = $self->_request('GET', "/api/v1/repos/$owner/$repo/pulls/$number", {ignore_errors => [404]});
+  return undef unless $res->is_success;
+  return $res->json;
 }
 
 sub get_notifications ($self) {
@@ -72,7 +73,11 @@ sub get_review_requests ($self) {
     if ($type eq 'Pull' && $url =~ /\/api\/v1\/repos\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/) {
       my ($owner, $repo, $number) = ($1, $2, $3);
       my $info = $self->pr_info($owner, $repo, $number);
-      if ($info->{review_requested}) {
+      if (!$info) {
+        $log->warn("Notification $id: pull request $owner/$repo!$number not found, maybe deleted");
+        $self->mark_notification_read($id);
+      }
+      elsif ($info->{review_requested}) {
         if ($info->{reviewed}) {
           $log->trace("Notification $id: review request for $owner/$repo!$number, but we already reviewed");
           $self->mark_notification_read($id);
@@ -135,7 +140,7 @@ sub post_report ($self, $owner, $repo, $review, $report) {
   my $res  = $self->_request(
     'POST',
     "/api/v1/repos/$owner/$repo/issues/comments/$review->{comment}/assets?name=report.md",
-    {form => $form, ignore_errors => 1}
+    {form => $form, ignore_all_errors => 1}
   );
   return $res->is_success;
 }
@@ -164,8 +169,8 @@ sub post_review ($self, $owner, $repo, $number, $result) {
 }
 
 sub pr_info ($self, $owner, $repo, $number) {
-  my $user             = $self->whoami;
-  my $issue            = $self->get_pull_request($owner, $repo, $number);
+  my $user = $self->whoami;
+  return undef unless my $issue = $self->get_pull_request($owner, $repo, $number);
   my $reviewers        = $issue->{requested_reviewers} // [];
   my $review_requested = !!grep { ($_->{login} // '') eq $user->{login} } @$reviewers;
   my $labels           = [map { $_->{name} } @{$issue->{labels}}];
@@ -203,9 +208,12 @@ sub _request($self, $method, $path, $options = {}) {
     $form ? (form => $form) : ($json ? (json => $json) : ())
   );
   $tx = $ua->start($tx);
+  return $tx->result if $options->{ignore_all_errors} || !(my $err = $tx->error);
 
-  return $tx->result if $options->{ignore_errors} || !(my $err = $tx->error);
-  croak "$err->{code} response from Gitea ($method $path): $err->{message}" if $err->{code};
+  if ($err->{code}) {
+    return $tx->result if $options->{ignore_errors} && grep { $_ eq $err->{code} } @{$options->{ignore_errors}};
+    croak "$err->{code} response from Gitea ($method $path): $err->{message}";
+  }
   croak "Connection error from Gitea: $err->{message}";
 }
 

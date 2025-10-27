@@ -66,8 +66,14 @@ sub check_open_requests ($self) {
     my $info   = $gitea->pr_info($owner, $repo, $request_id);
     my $result = $cavil->review_result($package);
 
+    # Pull request has vanished
+    if (!$info) {
+      $log->warn(qq{Pull request for package $package has vanished from Gitea, removing});
+      $cavil->remove_request($link);
+    }
+
     # Request is obsolete (no longer requested or new commit)
-    if (($info->{checkout} ne $checkout) || !$info->{review_requested} || $info->{state} ne 'open') {
+    elsif (($info->{checkout} ne $checkout) || !$info->{review_requested} || $info->{state} ne 'open') {
       $log->info(qq{Review request for package $package is obsolete, removing});
       $cavil->remove_request($link);
     }
