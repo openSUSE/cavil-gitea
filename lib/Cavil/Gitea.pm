@@ -172,8 +172,7 @@ sub run ($self) {
     'gitea-token=s'   => sub { $self->gitea->token($_[1]) },
     'r|review'        => \my $review,
     's|sync=s'        => \my $sync,
-    'ssh'             => sub { $self->ssh(1) },
-    'workarounds'     => sub { $self->gitea->workarounds(1) };
+    'ssh'             => sub { $self->ssh(1) };
 
   my $log = $self->log;
   if ($review) {
@@ -284,7 +283,6 @@ Cavil::Gitea - Gitea legal review bot
     -r, --review                Check notifications for review requests
         --ssh                   Use SSH URLs instead of HTTPS for checkouts
     -s, --sync <file>           Sync products from config file
-        --workarounds           Enable workarounds for Gitea bugs
 
 =head1 DESCRIPTION
 

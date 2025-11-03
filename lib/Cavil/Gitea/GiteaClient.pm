@@ -22,10 +22,9 @@ use Mojo::URL;
 use Mojo::UserAgent;
 
 has 'log';
-has token       => sub { die 'Gitea token is required' };
-has ua          => sub { Mojo::UserAgent->new->inactivity_timeout(3600) };
-has url         => sub { die 'Gitea URL is required' };
-has workarounds => 0;
+has token => sub { die 'Gitea token is required' };
+has ua    => sub { Mojo::UserAgent->new->inactivity_timeout(3600) };
+has url   => sub { die 'Gitea URL is required' };
 
 sub get_pull_request ($self, $owner, $repo, $number) {
   my $res = $self->_request('GET', "/api/v1/repos/$owner/$repo/pulls/$number", {ignore_errors => [404]});
@@ -40,8 +39,6 @@ sub get_notifications ($self) {
 }
 
 sub get_packages_for_project ($self, $owner, $repo, $branch) {
-  return $self->_scrape_packages_for_project($owner, $repo, $branch) if $self->workarounds;
-
   my $log  = $self->log;
   my $list = $self->_request('GET', "/api/v1/repos/$owner/$repo/contents", {form => {ref => $branch}})->json;
 
@@ -215,26 +212,6 @@ sub _request($self, $method, $path, $options = {}) {
     croak "$err->{code} response from Gitea ($method $path): $err->{message}";
   }
   croak "Connection error from Gitea: $err->{message}";
-}
-
-sub _scrape_packages_for_project ($self, $owner, $repo, $branch) {
-  my $log = $self->log;
-  my $dom = $self->_request('GET', "/$owner/$repo/src/branch/$branch/")->dom;
-
-  my $links = $dom->find('div#repo-files-table div.repo-file-item div.repo-file-cell a.text.primary[href]');
-  my $base  = Mojo::URL->new($self->url);
-  my $host  = $base->host_port;
-
-  my @packages;
-  for my $link ($links->each) {
-    my $url = Mojo::URL->new($link->{href})->base($base)->to_abs->to_string;
-    if (my $info = parse_git_url($url, $host)) {
-      push @packages, {owner => $info->{owner}, repo => $info->{repo}, checkout => $info->{checkout}};
-    }
-    else { $log->warn("Ignoring submodule link in unknown format: $url") }
-  }
-
-  return \@packages;
 }
 
 sub _url ($self, $path) { Mojo::URL->new($self->url . $path) }
