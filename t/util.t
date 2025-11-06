@@ -16,8 +16,10 @@
 use Mojo::Base -strict;
 
 use Test::More;
-use Cavil::Gitea::Util (qw(build_external_link build_git_url build_markdown_comment label_priority),
-  qw(parse_external_link parse_git_url parse_product_file));
+use Cavil::Gitea::Util (
+  qw(build_external_link build_git_url build_markdown_comment label_priority),
+  qw(parse_external_link parse_git_url parse_gitmodules parse_product_file)
+);
 use Mojo::File qw(curfile);
 
 subtest 'build_external_link' => sub {
@@ -144,6 +146,35 @@ subtest 'parse_git_url' => sub {
     is parse_git_url('https://src.opensuse.org/foo/bar',    'src.opensuse.org'), undef, 'wrong path';
     is parse_git_url('https:///foo/bar.git',                'src.opensuse.org'), undef, 'wrong host';
   };
+};
+
+subtest 'parse_gitmodules' => sub {
+  is_deeply parse_gitmodules('', 'src.opensuse.org'), {}, 'no data';
+
+  my $content = <<'EOF';
+[submodule "libxshmfence"]
+	path = libxshmfence
+	url = ../../SLFO-pool/libxshmfence
+[submodule "zziplib"]
+	url = ../../SLFO-pool/zziplib
+	path = zziplib
+[submodule "zypper"]
+	path = zypper
+	url = ../../SLFO-pool/zypper
+	branch = main
+[submodule "bc"]
+	branch = main
+	path = bc
+	url = ../../SLFO-pool/bc
+EOF
+  my $repos  = parse_gitmodules($content, 'src.opensuse.org');
+  my $result = {
+    libxshmfence => {host => 'src.opensuse.org', owner => 'SLFO-pool', repo => 'libxshmfence'},
+    zziplib      => {host => 'src.opensuse.org', owner => 'SLFO-pool', repo => 'zziplib'},
+    zypper       => {host => 'src.opensuse.org', owner => 'SLFO-pool', repo => 'zypper'},
+    bc           => {host => 'src.opensuse.org', owner => 'SLFO-pool', repo => 'bc'}
+  };
+  is_deeply $repos, $result, 'right data';
 };
 
 subtest 'parse_product_file' => sub {

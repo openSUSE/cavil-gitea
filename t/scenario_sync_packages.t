@@ -22,41 +22,44 @@ use Test::More;
 use CavilGiteaTest;
 use Mojolicious::Lite;
 use Mojo::File qw(curfile);
+use Mojo::Util qw(b64_encode);
 
 app->log->level('error');
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
-my $branch;
-get '/api/v1/repos/importtest/_ObsPrj/contents' => sub ($c) {
-  $branch = $c->param('ref');
+get '/api/v1/repos/importtest/_ObsPrj/git/trees/main' => sub ($c) {
   $c->render(
-    json => [
-      {
-        name              => '.gitmodules',
-        type              => 'file',
-        submodule_git_url => undef,
-        sha               => '867ea1977ee2b36745296eda7e1205ef8597f85e2f26a532af4ca89c2e654ff6'
-      },
-      {
-        name              => 'nodejs-common',
-        type              => 'submodule',
-        submodule_git_url => $c->url_for('/pool/nodejs-common.git')->to_abs->to_string,
-        sha               => '0e1ded1741457c56d700d4e9eb2efd7c2156c2f28f93e9280d2717ded50fa782'
-      },
-      {
-        name              => 'test',
-        type              => 'file',
-        submodule_git_url => undef,
-        sha               => '967ea1977ee2b36745296eda7e1205ef8597f85e2f26a532af4ca89c2e654ff7'
-      },
-      {
-        name              => 'perl-Mojolicious',
-        type              => 'submodule',
-        submodule_git_url => $c->url_for('/pool/perl-Mojolicious.git')->to_abs->to_string,
-        sha               => '1e1ded1741457c56d700d4e9eb2efd7c2156c2f28f93e9280d2717ded50fa783'
-      }
-    ]
+    json => {
+      tree => [
+        {path => '.gitea', type => 'tree', sha => '6f77d12df59cff0e2ca8cc82508b1b66242da7269823a9f6a07f9e9d5883cdb8'},
+        {path => '.gitmodules', type => 'blob'},
+        {
+          path => 'nodejs-common',
+          type => 'commit',
+          sha  => '0e1ded1741457c56d700d4e9eb2efd7c2156c2f28f93e9280d2717ded50fa782'
+        },
+        {path => 'test', type => 'blob'},
+        {
+          path => 'perl-Mojolicious',
+          type => 'commit',
+          sha  => '1e1ded1741457c56d700d4e9eb2efd7c2156c2f28f93e9280d2717ded50fa783'
+        }
+      ]
+    }
+  );
+};
+
+my $branch;
+get '/api/v1/repos/importtest/_ObsPrj/contents/.gitmodules' => sub ($c) {
+  $branch = $c->param('ref');
+  my $nodejs_url = $c->url_for('/pool/nodejs-common.git')->to_abs->to_string;
+  my $mojo_url   = $c->url_for('/pool/perl-Mojolicious.git')->to_abs->to_string;
+  $c->render(
+    json => {
+      content => b64_encode(
+        "[submodule \"nodejs-common\"]\n\turl = $nodejs_url\n[submodule \"perl-Mojolicious\"]\n\turl = $mojo_url\n\n")
+    }
   );
 };
 

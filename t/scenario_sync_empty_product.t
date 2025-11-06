@@ -27,23 +27,14 @@ app->log->level('error');
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
-get '/api/v1/repos/importtest/_ObsPrj/contents' => sub ($c) {
-  my $url = $c->url_for('/importtest/nodejs-common.git')->to_abs;
+get '/api/v1/repos/importtest/_ObsPrj/git/trees/main' => sub ($c) {
   $c->render(
-    json => [
-      {
-        name              => '.gitmodules',
-        type              => 'file',
-        submodule_git_url => undef,
-        sha               => '867ea1977ee2b36745296eda7e1205ef8597f85e2f26a532af4ca89c2e654ff6'
-      },
-      {
-        name              => 'nodejs-common',
-        type              => 'file',
-        submodule_git_url => undef,
-        sha               => '0e1ded1741457c56d700d4e9eb2efd7c2156c2f28f93e9280d2717ded50fa782'
-      }
-    ]
+    json => {
+      tree => [
+        {path => '.gitea', type => 'tree', sha => '6f77d12df59cff0e2ca8cc82508b1b66242da7269823a9f6a07f9e9d5883cdb8'},
+        {path => 'README', type => 'blob'}
+      ]
+    }
   );
 };
 

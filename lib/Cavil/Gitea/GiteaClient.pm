@@ -17,7 +17,8 @@ package Cavil::Gitea::GiteaClient;
 use Mojo::Base -base, -signatures;
 
 use Carp               qw(croak);
-use Cavil::Gitea::Util qw(build_markdown_comment parse_git_url);
+use Cavil::Gitea::Util qw(build_markdown_comment parse_git_url parse_gitmodules);
+use Mojo::Util         qw(b64_decode);
 use Mojo::URL;
 use Mojo::UserAgent;
 
@@ -39,19 +40,42 @@ sub get_notifications ($self) {
 }
 
 sub get_packages_for_project ($self, $owner, $repo, $branch) {
-  my $log  = $self->log;
-  my $list = $self->_request('GET', "/api/v1/repos/$owner/$repo/contents", {form => {ref => $branch}})->json;
+  my $log = $self->log;
+
+  my $page     = 1;
+  my $per_page = 500;
+  my @results;
+  while (1) {
+    my $list = $self->_request(
+      'GET',
+      "/api/v1/repos/$owner/$repo/git/trees/$branch",
+      {form => {page => $page, per_page => $per_page}}
+    )->json;
+    last unless my $tree = $list->{tree};
+    push @results, @$tree;
+    last if @$tree < $per_page;
+    $page++;
+  }
 
   my @packages;
-  my $host = $self->_host;
-  for my $item (@$list) {
-    next unless $item->{type} eq 'submodule';
+  return \@packages unless grep { $_->{path} eq '.gitmodules' } @results;
+  my $file
+    = $self->_request('GET', "/api/v1/repos/$owner/$repo/contents/.gitmodules", {form => {ref => $branch}})->json;
+  my $modules = parse_gitmodules(b64_decode($file->{content}), $self->_host);
 
-    my $url = $item->{submodule_git_url};
-    if (my $info = parse_git_url($url, $host)) {
-      push @packages, {owner => $info->{owner}, repo => $info->{repo}, checkout => $info->{checkout} || $item->{sha}};
+  for my $result (@results) {
+    next if $result->{type} ne 'commit';
+    next unless my $path = $result->{path};
+    my $checkout = $result->{sha};
+    my $module   = $modules->{$path};
+
+    unless ($checkout && $module && $module->{repo}) {
+      $log->warn("Submodule '$path' in unknown format, skipping");
+      next;
     }
-    else { $log->warn("Ignoring submodule in unknown format: $url") }
+
+    push @packages,
+      {host => $module->{host}, owner => $module->{owner}, repo => $module->{repo}, checkout => $checkout};
   }
 
   return \@packages;

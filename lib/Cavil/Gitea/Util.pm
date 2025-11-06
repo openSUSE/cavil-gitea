@@ -24,7 +24,7 @@ use YAML::XS qw(LoadFile);
 
 our @EXPORT_OK = (
   qw(build_external_link build_git_url build_markdown_comment label_priority),
-  qw(parse_external_link parse_git_url parse_product_file)
+  qw(parse_external_link parse_git_url parse_gitmodules parse_product_file)
 );
 
 sub build_external_link ($info) {
@@ -77,6 +77,29 @@ sub parse_git_url ($git, $base_host) {
   return {host => $host, owner => $1, repo => $2, checkout => $3}    if $path =~ m{^/([^/]+)/(.+?)/tree/(.+)$};
 
   return undef;
+}
+
+sub parse_gitmodules ($content, $base_host) {
+  my $modules = {};
+  my $current;
+
+  for my $line (split /\n/, $content) {
+    chomp $line;
+    if ($line =~ /^\[submodule "(.+)"\]$/) {
+      $current = $1;
+      $modules->{$current} = {host => undef, owner => undef, repo => undef};
+    }
+    elsif (defined $current) {
+      if ($line =~ /^\s*url\s*=\s*(.+)$/) {
+        next unless my $parsed = parse_git_url($1, $base_host);
+        $modules->{$current}{host}  = $parsed->{host};
+        $modules->{$current}{owner} = $parsed->{owner};
+        $modules->{$current}{repo}  = $parsed->{repo};
+      }
+    }
+  }
+
+  return $modules;
 }
 
 sub parse_product_file ($path) {
