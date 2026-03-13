@@ -133,7 +133,7 @@ sub get_review_requests ($self) {
 
 sub get_timeline ($self, $owner, $repo, $number) {
   my $timeline = $self->_request('GET', "/api/v1/repos/$owner/$repo/issues/$number/timeline")->json;
-  return $timeline;
+  return $timeline // [];
 }
 
 sub get_timeline_info ($self, $owner, $repo, $number) {
