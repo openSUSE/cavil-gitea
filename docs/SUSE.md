@@ -54,6 +54,6 @@ Just add your codestreams to the appropriate config file:
 * `gitea/products-suse.yml`: All active product codestreams from `src.suse.de`
 
 Once registered product codestreams will be synchronized daily and become visible as a product in
-[LegalDB](https://legaldb.suse.de/products) with indicators for the current review status.
+[LegalDB](https://legaldb.suse.de/products).
 
 ![Products](images/suse-5-products.png)
