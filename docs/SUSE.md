@@ -34,25 +34,26 @@ legal report with the details.
 Product codestreams in the git workflow are repositories using the _ObsPrj format. Usually stored in an organisation
 called `products`, like `products/MLMTools`.
 
-![ObsPrj](images/suse-5-obsprj.png)
-
 Individual packages are included in products as submodules and are expected to receive their legal review in the
 repository they originate from, usually in a `pool` organisation. The product repository itself only requires legal
 reviews on pull requests if it contains materials distributed to customers, such as packages vendored into the
 repository without the use of submodules.
 
-![Products](images/suse-5-products.png)
+![ObsPrj](images/suse-5-obsprj.png)
 
 To ensure thorough legal reviews, all product codestreams are expected to be registered. This is a self service
 process, performed with a simple pull request on [GitLab](https://gitlab.suse.de/legal/products/). Once merged all
-active packages in your codestreams will be kept up to date in [LegalDB](https://legaldb.suse.de) to speed up future
-legal reviews.
+active packages in your codestreams will be kept up to date in LegalDB to speed up future legal reviews. And don't
+forget to send another pull request to remove them again once a codestream becomes inactive.
 
 ![GitLab](images/suse-5-gitlab.png)
 
-Just add your codestreams to the appropriate config file and they will be synchronized daily:
+Just add your codestreams to the appropriate config file:
 
 * `gitea/products-opensuse.yml`: All active product codestreams from `src.opensuse.org`
 * `gitea/products-suse.yml`: All active product codestreams from `src.suse.de`
 
-And don't forget to send another pull request to remove them again once a codestream becomes inactive.
+Once registered all product codestreams will be synchronized daily and become visible as a product in
+[LegalDB](https://legaldb.suse.de/products).
+
+![Products](images/suse-5-products.png)
