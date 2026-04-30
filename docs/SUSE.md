@@ -7,9 +7,9 @@ repositories on the SUSE Gitea instances https://src.opensuse.org and https://sr
 ## Summary
 
 * Legal reviews are required for all package updates distributed to customers
-* Legal reviews of updates to product repositories are only required if the repository contains materials distributed
-  to customers, such as vendored packages not using submodules
 * Active product codestreams are required to be registered
+* Legal reviews of updates to product codestreams are only required if the repository contains materials distributed
+  to customers, such as vendored packages not using submodules
 
 ## Organisation
 
