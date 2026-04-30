@@ -29,6 +29,8 @@ legal report with the details.
 
 ![Review](images/suse-4-review.png)
 
+All packages distributed to customers are required to go through this process!
+
 ## Product Reviews
 
 Product codestreams in the git workflow are repositories using the _ObsPrj format. Usually stored in an organisation
