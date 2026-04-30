@@ -1,9 +1,15 @@
 # Gitea Legal Reviews at SUSE
 
 **IMPORTANT: The legal review bot should not yet be used for embargoed security updates!**
-
 This guide explains how to enable legal reviews with [Cavil](https://github.com/openSUSE/cavil) for your
 repositories on the SUSE Gitea instances https://src.opensuse.org and https://src.suse.de.
+
+## Summary
+
+* Legal reviews are required for all package updates distributed to customers
+* Legal reviews of updates to product repositories are only required if the repository contains materials distributed
+  to customers, such as vendored packages not using submodules
+* Active product codestreams are required to be registered
 
 ## Organisation
 
