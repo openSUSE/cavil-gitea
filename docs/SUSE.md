@@ -43,7 +43,7 @@ repository without the use of submodules.
 
 To ensure thorough legal reviews, all product codestreams are expected to be registered. This is a self service
 process, performed with a simple pull request on [GitLab](https://gitlab.suse.de/legal/products/). Once merged all
-active packages in your codestreams will be kept up to date to speed up future legal reviews. And don't forget to send
+active packages in your codestreams will be kept up to date to speed up future legal reviews. Don't forget to send
 another pull request to remove them again once codestreams become inactive.
 
 ![GitLab](images/suse-5-gitlab.png)
@@ -53,7 +53,7 @@ Just add your codestreams to the appropriate config file:
 * `gitea/products-opensuse.yml`: All active product codestreams from `src.opensuse.org`
 * `gitea/products-suse.yml`: All active product codestreams from `src.suse.de`
 
-Once registered product codestreams will be synchronized daily and become visible as a product in
+Registered product codestreams will be synchronized daily and become visible as a product in
 [LegalDB](https://legaldb.suse.de/products).
 
 ![Products](images/suse-5-products.png)
