@@ -132,8 +132,21 @@ sub get_review_requests ($self) {
 }
 
 sub get_timeline ($self, $owner, $repo, $number) {
-  my $timeline = $self->_request('GET', "/api/v1/repos/$owner/$repo/issues/$number/timeline")->json;
-  return $timeline // [];
+  my $page  = 1;
+  my $limit = 50;
+  my @events;
+  while (1) {
+    my $batch = $self->_request(
+      'GET',
+      "/api/v1/repos/$owner/$repo/issues/$number/timeline",
+      {form => {page => $page, limit => $limit}}
+    )->json;
+    last unless $batch && @$batch;
+    push @events, @$batch;
+    last if @$batch < $limit;
+    $page++;
+  }
+  return \@events;
 }
 
 sub get_timeline_info ($self, $owner, $repo, $number) {
