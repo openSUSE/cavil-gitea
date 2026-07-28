@@ -75,7 +75,9 @@ sub remove_request ($self, $info) {
 sub review_report ($self, $package) {
   my $res = $self->_request('GET', "/package/$package/report.txt", {ignore_errors => 1});
   return undef unless $res->is_success;
-  return {text => $res->text};
+
+  # Keep the report as raw bytes, decoded characters would break the upload to Gitea
+  return {text => $res->body};
 }
 
 sub review_result ($self, $package) {

@@ -67,7 +67,7 @@ get '/api/v1/repos/importtest/test/issues/1/timeline' => sub ($c) {
 
   my @events;
   if ($page eq '1') {
-    push @events, {type => 'pull_push', user => {login => 'tester'}};
+    push @events, {type => 'pull_push',      user => {login => 'tester'}};
     push @events, {type => 'review_request', user => {login => 'other-bot'}} for 1 .. ($limit - 1);
   }
   elsif ($page eq '2') {
