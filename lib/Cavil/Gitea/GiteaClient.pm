@@ -18,6 +18,7 @@ use Mojo::Base -base, -signatures;
 
 use Carp               qw(croak);
 use Cavil::Gitea::Util qw(build_markdown_comment parse_git_url parse_gitmodules);
+use Data::Dumper       ();
 use Mojo::Util         qw(b64_decode);
 use Mojo::URL;
 use Mojo::UserAgent;
@@ -135,15 +136,28 @@ sub get_timeline ($self, $owner, $repo, $number) {
   my $page  = 1;
   my $limit = 50;
   my @events;
+  my $previous = '';
   while (1) {
     my $batch = $self->_request(
       'GET',
       "/api/v1/repos/$owner/$repo/issues/$number/timeline",
       {form => {page => $page, limit => $limit}}
     )->json;
+
+    # Gitea filters some event types out of each page *after* applying the
+    # limit, so a page can contain fewer than "limit" events while more (newer)
+    # pages still exist. We must not treat a short page as the last page (doing
+    # so made us miss a new push whose events lived on a page we never fetched,
+    # and wrongly consider the pull request already reviewed). Keep paging until
+    # Gitea runs out of events, but stop if the server ignores pagination and
+    # keeps handing back the same page (avoids an infinite loop). Sort hash keys
+    # so the page signature does not depend on Perl's hash ordering.
     last unless $batch && @$batch;
+    my $signature = Data::Dumper->new([$batch])->Sortkeys(1)->Indent(0)->Terse(1)->Dump;
+    last if $signature eq $previous;
+    $previous = $signature;
+
     push @events, @$batch;
-    last if @$batch < $limit;
     $page++;
   }
   return \@events;
