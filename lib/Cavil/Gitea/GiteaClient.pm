@@ -93,43 +93,57 @@ sub get_review_requests ($self) {
     my $type = $notification->{subject}{type};
 
     if ($type eq 'Pull' && $url =~ /\/api\/v1\/repos\/([^\/]+)\/([^\/]+)\/issues\/(\d+)/) {
-      my ($owner, $repo, $number) = ($1, $2, $3);
-      my $info = $self->pr_info($owner, $repo, $number);
-      if (!$info) {
-        $log->warn("Notification $id: pull request $owner/$repo!$number not found, maybe deleted");
-        $self->mark_notification_read($id);
-      }
-      elsif ($info->{review_requested}) {
-        if ($info->{reviewed}) {
-          $log->trace("Notification $id: review request for $owner/$repo!$number, but we already reviewed");
-          $self->mark_notification_read($id);
-        }
-        else {
-          $log->trace("Notification $id: review request for $owner/$repo!$number");
-          my $open = {
-            notification => $id,
-            owner        => $owner,
-            repo         => $repo,
-            request      => $number,
-            checkout     => $info->{checkout},
-            labels       => $info->{labels}
-          };
-          push @open, $open;
-        }
-      }
-      else {
-        $log->trace("Notification $id: review request not for us");
-        $self->mark_notification_read($id);
-      }
+      my $open = $self->_review_request($id, $1, $2, $3);
+      push @open, $open if $open;
     }
     else {
       $log->trace("Notification $id: not a review request");
       $self->mark_notification_read($id);
     }
-
   }
 
   return \@open;
+}
+
+# Build a review request for a specific pull request, as if a notification for it
+# had arrived. Returns the same structure as get_review_requests (or undef when
+# there is nothing to do), but never marks a notification as read.
+sub review_request ($self, $owner, $repo, $number) {
+  return $self->_review_request(undef, $owner, $repo, $number);
+}
+
+sub _review_request ($self, $id, $owner, $repo, $number) {
+  my $log   = $self->log;
+  my $label = defined $id ? "Notification $id" : "Check $owner/$repo!$number";
+
+  my $info = $self->pr_info($owner, $repo, $number);
+  if (!$info) {
+    $log->warn("$label: pull request $owner/$repo!$number not found, maybe deleted");
+    $self->mark_notification_read($id) if defined $id;
+    return undef;
+  }
+
+  if (!$info->{review_requested}) {
+    $log->trace("$label: review request not for us");
+    $self->mark_notification_read($id) if defined $id;
+    return undef;
+  }
+
+  if ($info->{reviewed}) {
+    $log->trace("$label: review request for $owner/$repo!$number, but we already reviewed");
+    $self->mark_notification_read($id) if defined $id;
+    return undef;
+  }
+
+  $log->trace("$label: review request for $owner/$repo!$number");
+  return {
+    notification => $id,
+    owner        => $owner,
+    repo         => $repo,
+    request      => $number,
+    checkout     => $info->{checkout},
+    labels       => $info->{labels}
+  };
 }
 
 sub get_timeline ($self, $owner, $repo, $number) {

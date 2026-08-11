@@ -119,34 +119,20 @@ sub check_open_requests ($self) {
   }
 }
 
+# A manual alternative to a review request notification (for debugging), going
+# through the same checks as open_reviews (never a force open)
+sub check_request ($self, $spec) {
+  my ($owner, $repo, $request) = $spec =~ m{^([^/]+)/([^!]+)!(\d+)$}
+    or return $self->log->error(qq{Invalid pull request "$spec", expected "owner/repo!number"});
+
+  my $review = $self->gitea->review_request($owner, $repo, $request);
+  $self->_open_review($review) if $review;
+}
+
 sub open_reviews ($self) {
-  my $log   = $self->log;
   my $gitea = $self->gitea;
-  my $cavil = $self->cavil;
-
-  my $reviews = $gitea->get_review_requests;
-  for my $review (@$reviews) {
-    my $owner    = $review->{owner};
-    my $repo     = $review->{repo};
-    my $request  = $review->{request};
-    my $checkout = $review->{checkout};
-
-    $log->info(qq{Opening legal review for $owner/$repo!$request ($checkout)});
-
-    my $package_id = $cavil->create_request(
-      {
-        api      => $gitea->url,
-        ssh      => $self->ssh,
-        apinick  => $self->apinick,
-        owner    => $owner,
-        repo     => $repo,
-        request  => $request,
-        checkout => $checkout,
-        priority => label_priority($self->base_priority, $self->label_priorities, $review->{labels})
-      }
-    );
-
-    $log->info("Review request tracked as package $package_id");
+  for my $review (@{$gitea->get_review_requests}) {
+    $self->_open_review($review);
 
     # Mark notification as read late in case of errors (so re-runs will pick it up)
     $gitea->mark_notification_read($review->{notification});
@@ -170,6 +156,7 @@ sub run ($self) {
     'cavil-token=s'   => sub { $self->cavil->token($_[1]) },
     'gitea-url=s'     => sub { $self->gitea->url($_[1]) },
     'gitea-token=s'   => sub { $self->gitea->token($_[1]) },
+    'c|check=s'       => \my $check,
     'r|review'        => \my $review,
     's|sync=s'        => \my $sync,
     'ssh'             => sub { $self->ssh(1) };
@@ -180,6 +167,12 @@ sub run ($self) {
     $self->peer_info;
     $self->check_open_requests;
     $self->open_reviews;
+  }
+  elsif ($check) {
+    $log->info(qq{Check mode (pull request: $check)});
+    $self->peer_info;
+    $self->check_open_requests;
+    $self->check_request($check);
   }
   elsif ($sync) {
     $log->info("Sync mode (config: $sync)");
@@ -240,6 +233,26 @@ sub sync_products ($self, $config) {
   }
 }
 
+sub _open_review ($self, $review) {
+  my $gitea = $self->gitea;
+  my ($owner, $repo, $request, $checkout) = @{$review}{qw(owner repo request checkout)};
+
+  $self->log->info(qq{Opening legal review for $owner/$repo!$request ($checkout)});
+  my $package_id = $self->cavil->create_request(
+    {
+      api      => $gitea->url,
+      ssh      => $self->ssh,
+      apinick  => $self->apinick,
+      owner    => $owner,
+      repo     => $repo,
+      request  => $request,
+      checkout => $checkout,
+      priority => label_priority($self->base_priority, $self->label_priorities, $review->{labels})
+    }
+  );
+  $self->log->info("Review request tracked as package $package_id");
+}
+
 sub _attach_report_to_comment ($self, $owner, $repo, $package, $comment) {
   my $gitea = $self->gitea;
   my $cavil = $self->cavil;
@@ -267,6 +280,12 @@ Cavil::Gitea - Gitea legal review bot
       --gitea-url https://src.suse.de --gitea-token 1234 --api-nick ssd\
       --review
 
+    # Like --review, but triggered manually for one pull request instead of
+    # waiting for a notification (useful for debugging)
+    cavil-gitea --cavil-url https://legaldb.suse.de --cavil-token 4321\
+      --gitea-url https://src.suse.de --gitea-token 1234 --api-nick ssd\
+      --check pool/himmelblau!13
+
     # Synchronize products
     cavil-gitea --cavil-url https://legaldb.suse.de --cavil-token 4321\
       --gitea-url https://src.suse.de --gitea-token 1234\
@@ -275,6 +294,8 @@ Cavil::Gitea - Gitea legal review bot
   Options:
         --api-nick <nick>       API nickname, defaults to 'soo'
         --base-priority <num>   Base priority for legal reviews, defaults to 4
+    -c, --check <pr>            Trigger a review check for one pull request, as
+                                if notified, e.g. "owner/repo!number"
         --cavil-url <url>       Cavil server URL
         --cavil-token <token>   Cavil API token
         --gitea-url <url>       Gitea server URL
