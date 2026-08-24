@@ -75,8 +75,9 @@ sub get_packages_for_project ($self, $owner, $repo, $branch) {
       next;
     }
 
-    # The submodule path is the package name, the repository it points to can be
-    # capitalized differently (Gitea repo names are case insensitive)
+    # The submodule path is the package name, the submodule URL only tells us
+    # which repository to check out, and may spell it with different
+    # capitalization (Gitea resolves repository names case insensitively)
     push @packages,
       {
       name     => $path,

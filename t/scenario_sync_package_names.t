@@ -28,8 +28,8 @@ app->log->level('error');
 
 get '/api/v1/user' => {json => {id => 1, login => 'legaldb'}};
 
-# Gitea repository names are case insensitive and get normalized to lower case,
-# but the submodule path in the product keeps the real package name
+# Submodule URLs are often written in lower case, and Gitea happily resolves
+# them case insensitively, but only the submodule path has the real package name
 get '/api/v1/repos/products/SLFO/git/trees/slfo-1.3' => sub ($c) {
   $c->render(
     json => {
