@@ -80,23 +80,23 @@ sub parse_git_url ($git, $base_host) {
 }
 
 sub parse_gitmodules ($content, $base_host) {
-  my $modules = {};
-  my $current;
+  my @sections;
 
   for my $line (split /\n/, $content) {
-    chomp $line;
-    if ($line =~ /^\[submodule "(.+)"\]$/) {
-      $current = $1;
-      $modules->{$current} = {host => undef, owner => undef, repo => undef};
-    }
-    elsif (defined $current) {
-      if ($line =~ /^\s*url\s*=\s*(.+)$/) {
-        next unless my $parsed = parse_git_url($1, $base_host);
-        $modules->{$current}{host}  = $parsed->{host};
-        $modules->{$current}{owner} = $parsed->{owner};
-        $modules->{$current}{repo}  = $parsed->{repo};
-      }
-    }
+    if    ($line =~ /^\s*\[submodule\s+"(.+)"\]\s*$/) { push @sections, {} }
+    elsif (!@sections)                                {next}
+    elsif ($line =~ /^\s*path\s*=\s*(.+?)\s*$/)       { $sections[-1]{path} = $1 }
+    elsif ($line =~ /^\s*url\s*=\s*(.+?)\s*$/)        { $sections[-1]{url} = $1 }
+  }
+
+  # The section name is arbitrary git config space and must not be trusted, only
+  # "path" (the package name in the product, with correct capitalization) and
+  # "url" (the repository in Gitea, which may be capitalized differently) matter
+  my $modules = {};
+  for my $section (@sections) {
+    next unless defined(my $path = $section->{path});
+    my $parsed = (defined $section->{url} ? parse_git_url($section->{url}, $base_host) : undef) // {};
+    $modules->{$path} = {host => $parsed->{host}, owner => $parsed->{owner}, repo => $parsed->{repo}};
   }
 
   return $modules;

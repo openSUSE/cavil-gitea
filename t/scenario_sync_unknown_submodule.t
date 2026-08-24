@@ -47,7 +47,8 @@ get '/api/v1/repos/importtest/_ObsPrj/git/trees/main' => sub ($c) {
 my $branch;
 get '/api/v1/repos/importtest/_ObsPrj/contents/.gitmodules' => sub ($c) {
   $branch = $c->param('ref');
-  $c->render(json => {content => b64_encode("[submodule \"nodejs-common\"]\n\turl = git+foo:unknown\n\n")});
+  $c->render(json =>
+      {content => b64_encode("[submodule \"nodejs-common\"]\n\tpath = nodejs-common\n\turl = git+foo:unknown\n\n")});
 };
 
 my @removed_products;

@@ -69,7 +69,11 @@ my $branch;
 get '/api/v1/repos/importtest/_ObsPrj/contents/.gitmodules' => sub ($c) {
   $branch = $c->param('ref');
   $c->render(
-    json => {content => b64_encode("[submodule \"nodejs-common\"]\n\turl = ../../importtest/nodejs-common\n\n")});
+    json => {
+      content =>
+        b64_encode("[submodule \"nodejs-common\"]\n\tpath = nodejs-common\n\turl = ../../importtest/nodejs-common\n\n")
+    }
+  );
 };
 
 my @posted_packages;
@@ -104,8 +108,8 @@ subtest 'Product with new package' => sub {
     like $result->{logs}, qr/\[info\] Connecting to Cavil instance.+http:\/\/127\.0\.0\.1/, 'mock Cavil instance';
     like $result->{logs}, qr/\[info\] Connecting to Gitea instance.+http:\/\/127\.0\.0\.1.+soo.+legaldb/,
       'mock Gitea instance';
-    like $result->{logs}, qr/\[info\] Product "importtest" from repo "importtest\/_ObsPrj#main"/, 'found product';
-    like $result->{logs}, qr/\[info\] - importtest\/nodejs-common#0e1ded.+: 28/,                  'found package';
+    like $result->{logs}, qr/\[info\] Product "importtest" from repo "importtest\/_ObsPrj#main"/,   'found product';
+    like $result->{logs}, qr/\[info\] - nodejs-common from importtest\/nodejs-common#0e1ded.+: 28/, 'found package';
   };
 
   subtest 'Cavil state' => sub {

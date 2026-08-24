@@ -175,6 +175,26 @@ EOF
     bc           => {host => 'src.opensuse.org', owner => 'SLFO-pool', repo => 'bc'}
   };
   is_deeply $repos, $result, 'right data';
+
+  # The section name is arbitrary, only "path" and "url" matter
+  my $tricky = <<'EOF';
+[submodule "MozillaFirefox"]
+	path = MozillaFirefox
+	url = ../../pool/mozillafirefox
+	branch = slfo-main
+[submodule "whatever the packager typed here"]
+	path = libdbus-c++
+	url = ../../pool/libdbus-c__
+	branch = slfo-main
+[submodule "no-path"]
+	url = ../../pool/no-path
+EOF
+  is_deeply parse_gitmodules($tricky, 'src.suse.de'),
+    {
+    MozillaFirefox => {host => 'src.suse.de', owner => 'pool', repo => 'mozillafirefox'},
+    'libdbus-c++'  => {host => 'src.suse.de', owner => 'pool', repo => 'libdbus-c__'}
+    },
+    'keyed by path, not by section name';
 };
 
 subtest 'parse_product_file' => sub {

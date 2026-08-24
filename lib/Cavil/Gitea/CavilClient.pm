@@ -45,7 +45,7 @@ sub get_open_requests ($self) {
 sub create_package ($self, $info) {
   my $form = {
     api           => build_git_url($info),
-    package       => $info->{repo},
+    package       => $info->{name} // $info->{repo},
     rev           => $info->{checkout},
     external_link => $info->{external_link},
     type          => 'git',

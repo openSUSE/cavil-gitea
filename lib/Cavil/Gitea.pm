@@ -204,14 +204,16 @@ sub sync_products ($self, $config) {
     my $list = $gitea->get_packages_for_project($owner, $repo, $branch);
     my @packages;
     for my $package (@$list) {
-      my $owner      = $package->{owner};
-      my $repo       = $package->{repo};
-      my $checkout   = $package->{checkout};
-      my $package_id = $cavil->create_package(
+      my $package_name = $package->{name};
+      my $owner        = $package->{owner};
+      my $repo         = $package->{repo};
+      my $checkout     = $package->{checkout};
+      my $package_id   = $cavil->create_package(
         {
           api           => $gitea_url,
           ssh           => $ssh,
           apinick       => $apinick,
+          name          => $package_name,
           owner         => $owner,
           repo          => $repo,
           checkout      => $checkout,
@@ -220,7 +222,7 @@ sub sync_products ($self, $config) {
         }
       );
       push @packages, $package_id;
-      $log->info(qq{- $owner/$repo#$checkout: $package_id});
+      $log->info(qq{- $package_name from $owner/$repo#$checkout: $package_id});
     }
 
     if (@packages) { $cavil->update_product($name, \@packages) }

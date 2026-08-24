@@ -58,7 +58,9 @@ get '/api/v1/repos/importtest/_ObsPrj/contents/.gitmodules' => sub ($c) {
   $c->render(
     json => {
       content => b64_encode(
-        "[submodule \"nodejs-common\"]\n\turl = $nodejs_url\n[submodule \"perl-Mojolicious\"]\n\turl = $mojo_url\n\n")
+            "[submodule \"nodejs-common\"]\n\tpath = nodejs-common\n\turl = $nodejs_url\n"
+          . "[submodule \"perl-Mojolicious\"]\n\tpath = perl-Mojolicious\n\turl = $mojo_url\n\n"
+      )
     }
   );
 };
@@ -96,8 +98,8 @@ subtest 'Product with multiple packages' => sub {
     like $result->{logs}, qr/\[info\] Connecting to Gitea instance.+http:\/\/127\.0\.0\.1.+soo.+legaldb/,
       'mock Gitea instance';
     like $result->{logs}, qr/\[info\] Product "importtest" from repo "importtest\/_ObsPrj#main"/, 'found product';
-    like $result->{logs}, qr/\[info\] - pool\/nodejs-common#0e1ded.+: 28/,                        'found first package';
-    like $result->{logs}, qr/\[info\] - pool\/perl-Mojolicious.+: 29/, 'found second package';
+    like $result->{logs}, qr/\[info\] - nodejs-common from pool\/nodejs-common#0e1ded.+: 28/,     'found first package';
+    like $result->{logs}, qr/\[info\] - perl-Mojolicious from pool\/perl-Mojolicious.+: 29/, 'found second package';
   };
 
   subtest 'Cavil state' => sub {

@@ -75,8 +75,16 @@ sub get_packages_for_project ($self, $owner, $repo, $branch) {
       next;
     }
 
+    # The submodule path is the package name, the repository it points to can be
+    # capitalized differently (Gitea repo names are case insensitive)
     push @packages,
-      {host => $module->{host}, owner => $module->{owner}, repo => $module->{repo}, checkout => $checkout};
+      {
+      name     => $path,
+      host     => $module->{host},
+      owner    => $module->{owner},
+      repo     => $module->{repo},
+      checkout => $checkout
+      };
   }
 
   return \@packages;
