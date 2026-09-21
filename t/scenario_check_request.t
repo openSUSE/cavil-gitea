@@ -62,6 +62,7 @@ get '/api/v1/repos/importtest/test/pulls/1' => {
   json => {
     requested_reviewers => [{login => 'legaldb'}],
     labels              => [{name  => 'Critical Priority'}],
+    body                => 'This pull request addresses CVE-2024-1234.',
     head                => {sha => 'b352a491da106380cf55019f7ac025077537bca5'},
     state               => 'open'
   }
@@ -106,6 +107,7 @@ subtest 'Trigger a review for an untracked pull request' => sub {
     is $submitted_packages[0]{package},  'test',                                     'right package';
     is $submitted_packages[0]{rev},      'b352a491da106380cf55019f7ac025077537bca5', 'right rev';
     is $submitted_packages[0]{priority}, 9,                                          'right priority';
+    is $submitted_packages[0]{tags},     'CVE',                                      'CVE tag from body';
     is $submitted_packages[1],           undef,                                      'no more packages';
 
     is $submitted_requests[0]{external_link}, 'soo#importtest/test!1', 'right external link';

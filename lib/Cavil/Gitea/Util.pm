@@ -23,7 +23,7 @@ use Mojo::URL;
 use YAML::XS qw(LoadFile);
 
 our @EXPORT_OK = (
-  qw(build_external_link build_git_url build_markdown_comment label_priority),
+  qw(build_external_link build_git_url build_markdown_comment has_cve label_priority),
   qw(parse_external_link parse_git_url parse_gitmodules parse_product_file)
 );
 
@@ -46,6 +46,11 @@ sub build_markdown_comment ($result) {
   my $reason = $result->{result} || ($result->{state} eq 'unacceptable' ? 'Reviewed not ok' : 'Reviewed ok');
   return "Legal reviewed as [$result->{state}]($result->{url}):\n```\n$reason\n```" unless $result->{reviewer};
   return "Legal reviewed by *$result->{reviewer}* as [$result->{state}]($result->{url}):\n```\n$reason\n```";
+}
+
+sub has_cve ($text) {
+  return 0 unless defined $text && length $text;
+  return $text =~ /\bCVE-[0-9]{4}-[0-9]{4,}\b/i ? 1 : 0;
 }
 
 sub label_priority ($prio, $map, $labels) {

@@ -151,7 +151,8 @@ sub _review_request ($self, $id, $owner, $repo, $number) {
     repo         => $repo,
     request      => $number,
     checkout     => $info->{checkout},
-    labels       => $info->{labels}
+    labels       => $info->{labels},
+    body         => $info->{body}
   };
 }
 
@@ -254,6 +255,7 @@ sub pr_info ($self, $owner, $repo, $number) {
     review_requested => $review_requested,
     reviewed         => $timeline_info->{reviewed_since_push},
     labels           => $labels,
+    body             => $issue->{body},
     state            => $issue->{state}
   };
 }

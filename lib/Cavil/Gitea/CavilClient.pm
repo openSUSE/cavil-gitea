@@ -51,6 +51,7 @@ sub create_package ($self, $info) {
     type          => 'git',
     priority      => $info->{priority}
   };
+  $form->{tags} = $info->{tags} if defined $info->{tags};
   my $data = $self->_request('POST', '/packages', {form => $form})->json;
   return $data->{saved}{id};
 }

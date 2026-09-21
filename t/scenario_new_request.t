@@ -89,6 +89,7 @@ subtest 'New request' => sub {
     is $submitted_packages[0]{rev},           'b352a491da106380cf55019f7ac025077537bca5', 'right rev';
     like $submitted_packages[0]{api}, qr/http.+\/importtest\/test\.git/, 'right api';
     is $submitted_packages[0]{priority}, 9,     'right priority';
+    is $submitted_packages[0]{tags},     undef, 'no tags (no CVE in body)';
     is $submitted_packages[1],           undef, 'no more packages';
 
     is $submitted_requests[0]{package},       1,                       'right package';

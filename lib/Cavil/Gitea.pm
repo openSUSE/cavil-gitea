@@ -18,7 +18,7 @@ use Mojo::Base -base, -signatures;
 
 use Cavil::Gitea::CavilClient;
 use Cavil::Gitea::GiteaClient;
-use Cavil::Gitea::Util qw(label_priority parse_product_file);
+use Cavil::Gitea::Util qw(has_cve label_priority parse_product_file);
 use Mojo::Log;
 use Mojo::Util qw(extract_usage getopt);
 
@@ -249,7 +249,8 @@ sub _open_review ($self, $review) {
       repo     => $repo,
       request  => $request,
       checkout => $checkout,
-      priority => label_priority($self->base_priority, $self->label_priorities, $review->{labels})
+      priority => label_priority($self->base_priority, $self->label_priorities, $review->{labels}),
+      tags     => has_cve($review->{body}) ? 'CVE' : undef
     }
   );
   $self->log->info("Review request tracked as package $package_id");

@@ -17,7 +17,7 @@ use Mojo::Base -strict;
 
 use Test::More;
 use Cavil::Gitea::Util (
-  qw(build_external_link build_git_url build_markdown_comment label_priority),
+  qw(build_external_link build_git_url build_markdown_comment has_cve label_priority),
   qw(parse_external_link parse_git_url parse_gitmodules parse_product_file)
 );
 use Mojo::File qw(curfile);
@@ -92,6 +92,27 @@ subtest 'build_markdown_comment' => sub {
   };
   is build_markdown_comment($result6), "Legal review [in progress](https://src.opensuse.org/reviews/details/6).",
     'right comment';
+};
+
+subtest 'has_cve' => sub {
+
+  # Positive
+  ok has_cve('Fixes CVE-2024-1234 in the parser'),     'standard CVE mid-sentence';
+  ok has_cve('CVE-2024-1234'),                         'bare CVE';
+  ok has_cve('cve-2024-1234'),                         'lowercase';
+  ok has_cve('CVE-2024-1234567'),                      'long sequence';
+  ok has_cve('First CVE-2024-0001 and CVE-2025-9999'), 'multiple CVEs still true';
+  ok has_cve("Line one\n`CVE-2024-1234`\nLine three"), 'inside markdown/backticks';
+
+  # Negative
+  ok !has_cve(undef),                'undef';
+  ok !has_cve(''),                   'empty string';
+  ok !has_cve('No security issues'), 'plain prose';
+  ok !has_cve('CVE'),                'word CVE without id';
+  ok !has_cve('CVE-2024'),           'incomplete, no sequence';
+  ok !has_cve('CVE-24-1'),           'year/sequence too short';
+  ok !has_cve('XCVE-2024-1234'),     'no leading word boundary';
+  ok !has_cve('CVE-2024-1234X'),     'no trailing word boundary';
 };
 
 subtest 'label_priority' => sub {
